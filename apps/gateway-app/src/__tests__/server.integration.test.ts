@@ -5,6 +5,7 @@ import fastifyCors from '@fastify/cors';
 import type { ICache, ILogger } from '@kb-labs/core-platform';
 import { HostRegistrationSchema } from '@kb-labs/gateway-contracts';
 import { createAuthMiddleware } from '../auth/middleware.js';
+import type { JwtConfig } from '@kb-labs/gateway-auth';
 import { HostRegistry } from '../hosts/registry.js';
 import { createWsHandler } from '../hosts/ws-handler.js';
 
@@ -30,12 +31,14 @@ const noopLogger: ILogger = {
 } as unknown as ILogger;
 
 // Build a minimal Fastify app matching server.ts structure (without proxy)
+const stubJwtConfig: JwtConfig = { secret: 'test-secret' };
+
 async function buildApp(cache: ICache): Promise<FastifyInstance> {
   const app = Fastify({ logger: false });
 
   await app.register(fastifyWebsocket);
   await app.register(fastifyCors, { origin: true });
-  app.addHook('preHandler', createAuthMiddleware(cache));
+  app.addHook('preHandler', createAuthMiddleware(cache, stubJwtConfig));
 
   app.get('/health', async () => ({ status: 'ok', version: '1.0' }));
 
