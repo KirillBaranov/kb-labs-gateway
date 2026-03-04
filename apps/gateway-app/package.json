@@ -23,6 +23,7 @@
     "@kb-labs/core-platform": "workspace:*",
     "@kb-labs/core-runtime": "workspace:*",
     "@kb-labs/core-sys": "workspace:*",
+    "@kb-labs/gateway-auth": "workspace:*",
     "@kb-labs/gateway-contracts": "workspace:*",
     "@kb-labs/gateway-core": "workspace:*",
     "fastify": "^5.2.0"
