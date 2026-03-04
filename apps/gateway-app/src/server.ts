@@ -5,7 +5,9 @@ import fastifyHttpProxy from '@fastify/http-proxy';
 import type { ICache, ILogger } from '@kb-labs/core-platform';
 import type { GatewayConfig } from '@kb-labs/gateway-contracts';
 import { HostRegistrationSchema } from '@kb-labs/gateway-contracts';
+import { AuthService, type JwtConfig } from '@kb-labs/gateway-auth';
 import { createAuthMiddleware } from './auth/middleware.js';
+import { registerAuthRoutes } from './auth/routes.js';
 import { HostRegistry } from './hosts/registry.js';
 import { createWsHandler } from './hosts/ws-handler.js';
 
@@ -27,6 +29,7 @@ export async function createServer(
   config: GatewayConfig,
   cache: ICache,
   logger: ILogger,
+  jwtConfig: JwtConfig,
 ) {
   const app = Fastify({
     loggerInstance: pinoCompatibleLogger(logger) as unknown as Parameters<typeof Fastify>[0]['loggerInstance'],
@@ -36,8 +39,12 @@ export async function createServer(
   await app.register(fastifyWebsocket);
   await app.register(fastifyCors, { origin: true });
 
-  // Auth middleware for all routes
-  app.addHook('preHandler', createAuthMiddleware(cache));
+  // Auth middleware for all routes (onRequest fires before routing — applies to proxy plugins too)
+  app.addHook('onRequest', createAuthMiddleware(cache, jwtConfig));
+
+  // Auth service + public routes (/auth/register, /auth/token, /auth/refresh)
+  const authService = new AuthService(cache, jwtConfig);
+  registerAuthRoutes(app, authService);
 
   // Health (public)
   app.get('/health', async () => ({ status: 'ok', version: '1.0' }));
@@ -73,7 +80,7 @@ export async function createServer(
     await app.register(fastifyHttpProxy, {
       upstream: upstream.url,
       prefix: upstream.prefix,
-      rewritePrefix: '',
+      rewritePrefix: upstream.prefix,
       disableCache: true,
     });
     logger.info(`Upstream registered: ${name} → ${upstream.url} (${upstream.prefix})`);
