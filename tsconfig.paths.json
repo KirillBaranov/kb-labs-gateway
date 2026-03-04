@@ -2,6 +2,43 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@kb-labs/core-config": [
+        "../kb-labs-core/packages/core-config/src/index.ts"
+      ],
+      "@kb-labs/core-config/*": [
+        "../kb-labs-core/packages/core-config/src/*"
+      ],
+      "@kb-labs/core-platform": [
+        "../kb-labs-core/packages/core-platform/src/index.ts"
+      ],
+      "@kb-labs/core-platform/*": [
+        "../kb-labs-core/packages/core-platform/src/*"
+      ],
+      "@kb-labs/core-runtime": [
+        "../kb-labs-core/packages/core-runtime/src/index.ts"
+      ],
+      "@kb-labs/core-runtime/*": [
+        "../kb-labs-core/packages/core-runtime/src/*"
+      ],
+      "@kb-labs/core-sys": [
+        "../kb-labs-core/packages/core-sys/src/index.ts"
+      ],
+      "@kb-labs/core-sys/*": [
+        "../kb-labs-core/packages/core-sys/src/*"
+      ],
+      "@kb-labs/gateway-contracts": [
+        "packages/gateway-contracts/src/index.ts"
+      ],
+      "@kb-labs/gateway-contracts/*": [
+        "packages/gateway-contracts/src/*"
+      ],
+      "@kb-labs/gateway-core": [
+        "packages/gateway-core/src/index.ts"
+      ],
+      "@kb-labs/gateway-core/*": [
+        "packages/gateway-core/src/*"
+      ]
+    }
   }
 }

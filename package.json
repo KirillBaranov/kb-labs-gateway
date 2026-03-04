@@ -1,8 +1,8 @@
 {
-  "name": "@kb-labs/product-template",
+  "name": "kb-labs-gateway",
   "version": "0.1.0",
   "private": true,
-  "description": "KB Labs product template — zero-config starter powered by @kb-labs/devkit.",
+  "description": "KB Labs Gateway — central router for all platform clients and services.",
   "type": "module",
   "author": {
     "name": "Kirill Baranov",
@@ -36,7 +36,8 @@
     "// ——— core": "────────────────────────────────────────",
     "build": "pnpm -r run build",
     "build:clean": "pnpm -r run clean && pnpm -r run build",
-    "dev": "pnpm -r --parallel run dev",
+    "dev": "pnpm --filter @kb-labs/gateway-app dev",
+    "start": "pnpm --filter @kb-labs/gateway-app start",
     "// ——— quality": "────────────────────────────────────────",
     "lint": "pnpm -r exec eslint .",
     "lint:fix": "pnpm -r exec eslint . --fix",
