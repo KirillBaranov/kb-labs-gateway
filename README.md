@@ -9,11 +9,14 @@ CLI / Studio / IDE
         │
         ▼
   Gateway :4000           ← single endpoint for all clients
+   ├── /auth/register  (public — JWT registration)
+   ├── /auth/token     (public — issue JWT pair)
+   ├── /auth/refresh   (public — rotate JWT pair)
+   ├── /health         (public)
+   ├── /hosts/register (public — legacy static token)
+   ├── /hosts/connect  (WebSocket — Host Agent, JWT Bearer)
    ├── /api/ui/*   → REST API     :5050
-   ├── /api/exec/* → Workflow     :7778
-   ├── /health     (public)
-   ├── /hosts/register (public)
-   └── /hosts/connect  (WebSocket — Host Agent)
+   └── /api/exec/* → Workflow     :7778
 ```
 
 **Host** = any machine connecting to the platform and providing capabilities (filesystem, git, editor-context). The laptop running CLI/Studio is a Host; the cloud server is not.
@@ -32,6 +35,7 @@ Two supported deployment scenarios:
 | [`@kb-labs/gateway-app`](./apps/gateway-app/) | Fastify server — entry point |
 | [`@kb-labs/gateway-contracts`](./packages/gateway-contracts/) | Zod schemas — source of truth |
 | [`@kb-labs/gateway-core`](./packages/gateway-core/) | Shared logic (AdaptiveBuffer, TraceContext) |
+| [`@kb-labs/gateway-auth`](./packages/gateway-auth/) | JWT auth — register, issue, refresh, verify |
 
 ## Quick Start
 
@@ -133,23 +137,63 @@ While a Host is offline, incoming calls are buffered in ICache with adaptive TTL
 ## ICache Key Namespace
 
 ```
+# Host registry
 host:registry:{namespaceId}:{hostId}  → HostDescriptor
-host:token:{machineToken}             → { hostId, namespaceId }
-host:connections:{hostId}             → ConnectionDescriptor[]  (TTL 90s)
-host:buffer:{hostId}                  → BufferedCall[]          (adaptive TTL 30s–5min)
+host:token:{machineToken}             → { hostId, namespaceId }  (legacy static token)
+host:connections:{hostId}             → ConnectionDescriptor[]   (TTL 90s)
+host:buffer:{hostId}                  → BufferedCall[]           (adaptive TTL 30s–5min)
+
+# Auth (JWT)
+auth:client:{clientId}                → ClientRecord             (permanent)
+auth:refresh:{sha256(token)}          → { hostId, namespaceId }  (TTL 30d)
+auth:publickey:{hostId}               → X25519 public key        (permanent)
 ```
 
 ## Auth
 
-Three token types flow through the Gateway:
+### JWT flow (M1 — current)
+
+```bash
+# 1. Register agent — get clientId + clientSecret (one-time)
+curl -X POST http://localhost:4000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"my-laptop","namespaceId":"default","capabilities":["filesystem","git"]}'
+# → { "clientId": "clt_...", "clientSecret": "cs_...", "hostId": "host_..." }
+
+# 2. Get token pair
+curl -X POST http://localhost:4000/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"clientId":"clt_...","clientSecret":"cs_..."}'
+# → { "accessToken": "eyJ...", "refreshToken": "eyJ...", "expiresIn": 900, "tokenType": "Bearer" }
+
+# 3. Use access token
+curl -H "Authorization: Bearer eyJ..." http://localhost:4000/health
+
+# 4. Rotate tokens (before accessToken expires)
+curl -X POST http://localhost:4000/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"eyJ..."}'
+# → new token pair; old refreshToken invalidated
+```
+
+Token lifetimes: **accessToken = 15 min**, **refreshToken = 30 days** (rotation on use).
+
+### Token types
 
 | Type | Source | Usage |
 |------|--------|-------|
-| `user` | Studio session | REST API calls |
-| `cli` | CLI config | CLI → Gateway |
-| `machine` | `/hosts/register` response | Host Agent WebSocket |
+| `machine` | `/auth/register` + `/auth/token` | Host Agent WebSocket + API calls |
+| static (dev) | `dev-studio-token` env | Studio in local-only mode (fallback) |
 
-Public routes (no auth required): `GET /health`, `POST /hosts/register`.
+Public routes (no auth): `GET /health`, `POST /auth/register`, `POST /auth/token`, `POST /auth/refresh`.
+
+### ICache key namespace (auth)
+
+```
+auth:client:{clientId}      → ClientRecord  (permanent)
+auth:refresh:{sha256(token)} → { hostId, namespaceId }  (TTL 30d)
+auth:publickey:{hostId}     → X25519 public key (base64url)
+```
 
 ## Development
 

@@ -1,10 +1,17 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { ICache } from '@kb-labs/core-platform';
 import type { AuthContext } from '@kb-labs/gateway-contracts';
+import type { JwtConfig } from '@kb-labs/gateway-auth';
 import { resolveToken, extractBearerToken } from './tokens.js';
 
 // Routes that don't require auth
-const PUBLIC_ROUTES = new Set(['/health', '/hosts/register']);
+const PUBLIC_ROUTES = new Set([
+  '/health',
+  '/hosts/register',
+  '/auth/register',
+  '/auth/token',
+  '/auth/refresh',
+]);
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -12,21 +19,24 @@ declare module 'fastify' {
   }
 }
 
-export function createAuthMiddleware(cache: ICache) {
+export function createAuthMiddleware(cache: ICache, jwtConfig: JwtConfig) {
   return async function authMiddleware(
     request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
-    const rawPath = request.routeOptions.url ?? new URL(request.url, 'http://localhost').pathname;
+    const rawPath = new URL(request.url, 'http://localhost').pathname;
     const routePath = rawPath.replace(/\/+/g, '/').replace(/\/+$/, '') || '/';
-    if (PUBLIC_ROUTES.has(routePath)) {return;}
+    if (PUBLIC_ROUTES.has(routePath)) return;
 
-    const token = extractBearerToken(request.headers.authorization);
+    // Bearer header takes precedence; fall back to ?access_token= for SSE
+    // connections where browsers cannot set custom headers.
+    const queryToken = (request.query as Record<string, string | undefined>)['access_token'];
+    const token = extractBearerToken(request.headers.authorization) ?? queryToken ?? null;
     if (!token) {
       return reply.code(401).send({ error: 'Unauthorized', message: 'Missing Authorization header' });
     }
 
-    const authContext = await resolveToken(token, cache);
+    const authContext = await resolveToken(token, cache, jwtConfig);
     if (!authContext) {
       return reply.code(401).send({ error: 'Unauthorized', message: 'Invalid token' });
     }
