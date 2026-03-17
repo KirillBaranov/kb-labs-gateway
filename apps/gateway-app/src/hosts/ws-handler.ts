@@ -1,15 +1,23 @@
 import { randomUUID } from 'node:crypto';
-import type { WebSocket } from '@fastify/websocket';
-import type { FastifyRequest } from 'fastify';
+import type { WebSocket } from 'ws';
+
+interface WsRequest {
+  headers: { authorization?: string };
+  url?: string;
+}
 import type { ICache } from '@kb-labs/core-platform';
 import {
   HelloMessageSchema,
+  HostCapabilitySchema,
   SUPPORTED_PROTOCOL_VERSIONS,
   type OutboundMessage,
 } from '@kb-labs/gateway-contracts';
 import { AdaptiveBuffer } from '@kb-labs/gateway-core';
+import { getClientByHostId, type JwtConfig } from '@kb-labs/gateway-auth';
 import { HostRegistry } from './registry.js';
 import { extractBearerToken, resolveToken } from '../auth/tokens.js';
+import { globalDispatcher } from './dispatcher.js';
+import { executionRegistry } from '../execute/execution-registry.js';
 
 const HELLO_TIMEOUT_MS = 5_000;
 const HEARTBEAT_INTERVAL_MS = 30_000;
@@ -19,13 +27,13 @@ function send(ws: WebSocket, msg: OutboundMessage): void {
   ws.send(JSON.stringify(msg));
 }
 
-export function createWsHandler(cache: ICache) {
+export function createWsHandler(cache: ICache, jwtConfig: JwtConfig) {
   const registry = new HostRegistry(cache);
   const buffer = new AdaptiveBuffer(cache);
 
   return async function wsHandler(
     socket: WebSocket,
-    request: FastifyRequest,
+    request: WsRequest,
   ): Promise<void> {
     // 1. Auth — machine token required
     const token = extractBearerToken(request.headers.authorization);
@@ -34,7 +42,7 @@ export function createWsHandler(cache: ICache) {
       return;
     }
 
-    const tokenEntry = await resolveToken(token, cache);
+    const tokenEntry = await resolveToken(token, cache, jwtConfig);
     if (!tokenEntry || tokenEntry.type !== 'machine') {
       socket.close(1008, 'Invalid machine token');
       return;
@@ -46,6 +54,7 @@ export function createWsHandler(cache: ICache) {
 
     // 2. Wait for hello (with timeout)
     let protocolVersion: string | null = null;
+    let helloCaps: string[] = [];
     let helloDone = false;
 
     const protocolVersions: readonly string[] = SUPPORTED_PROTOCOL_VERSIONS;
@@ -79,6 +88,7 @@ export function createWsHandler(cache: ICache) {
           }
 
           protocolVersion = msg.protocolVersion;
+          helloCaps = msg.capabilities ?? [];
           resolve();
         } catch {
           socket.close(1008, 'Invalid hello message');
@@ -91,8 +101,27 @@ export function createWsHandler(cache: ICache) {
 
     if (!protocolVersion) {return;}
 
-    // 3. Set online + send connected
+    // 3. Ensure host descriptor exists (JWT-registered hosts have no registry entry yet)
+    const clientRecord = await getClientByHostId(cache, hostId);
+    const registryCaps = (clientRecord?.capabilities ?? [])
+      .map((c) => HostCapabilitySchema.safeParse(c))
+      .filter((r) => r.success)
+      .map((r) => r.data);
+
+    // Security: for JWT-registered hosts use capabilities from clientRecord only.
+    // For static-token hosts (no clientRecord) accept capabilities from hello message,
+    // but validate each against HostCapabilitySchema to reject unknown values.
+    const validatedHelloCaps = clientRecord ? [] : helloCaps
+      .map((c) => HostCapabilitySchema.safeParse(c))
+      .filter((r) => r.success)
+      .map((r) => r.data);
+
+    const capabilities = clientRecord ? registryCaps : validatedHelloCaps;
+    await registry.ensureRegistered(hostId, namespaceId, clientRecord?.name ?? hostId, capabilities);
+
+    // 4. Set online + register in dispatcher (with capabilities for routing) + send connected
     await registry.setOnline(hostId, namespaceId, connectionId);
+    globalDispatcher.registerConnection(hostId, namespaceId, socket, capabilities);
 
     send(socket, {
       type: 'connected',
@@ -145,7 +174,7 @@ export function createWsHandler(cache: ICache) {
           case 'chunk':
           case 'result':
           case 'error':
-            // TODO: route to pending call resolver (v2)
+            globalDispatcher.handleInbound(msg as { type: string; requestId?: string; data?: unknown; error?: unknown });
             break;
         }
       } catch {
@@ -156,6 +185,14 @@ export function createWsHandler(cache: ICache) {
     // 7. Disconnect cleanup
     socket.on('close', async () => {
       clearInterval(heartbeatWatchdog);
+      globalDispatcher.removeConnection(hostId, namespaceId);
+
+      // Cancel all executions dispatched to this host (CC2)
+      const cancelled = executionRegistry.cancelByHost(hostId, 'disconnect');
+      if (cancelled.length > 0) {
+        console.warn(`[ws-handler] Host ${hostId} disconnected, cancelled ${cancelled.length} execution(s)`);
+      }
+
       await registry.setOffline(hostId, namespaceId, connectionId);
     });
   };

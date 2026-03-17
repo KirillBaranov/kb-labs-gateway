@@ -70,7 +70,7 @@ describe('AdaptiveBuffer.enqueue', () => {
     const call = makeCall('req-1');
     await buf.enqueue('host-a', call, 0);
     expect(cache.set).toHaveBeenCalledOnce();
-    const [key, value] = (cache.set as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [key, value] = (cache.set as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(key).toBe('host:buffer:host-a');
     expect(value).toEqual([call]);
   });
@@ -81,7 +81,7 @@ describe('AdaptiveBuffer.enqueue', () => {
     await buf.enqueue('host-a', c1, 0);
     await buf.enqueue('host-a', c2, 0);
     // Second set call should have both calls
-    const [, value] = (cache.set as ReturnType<typeof vi.fn>).mock.calls[1];
+    const [, value] = (cache.set as ReturnType<typeof vi.fn>).mock.calls[1]!;
     expect(value).toHaveLength(2);
     expect((value as BufferedCall[])[1]!.requestId).toBe('req-2');
   });
@@ -95,7 +95,7 @@ describe('AdaptiveBuffer.enqueue', () => {
 
   it('uses adaptive TTL when calling cache.set', async () => {
     await buf.enqueue('host-a', makeCall('r1'), 0); // load=0 → maxTTL
-    const [, , ttl] = (cache.set as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [, , ttl] = (cache.set as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(ttl).toBe(DEFAULT_BUFFER_POLICY.maxTTL);
   });
 });

@@ -18,7 +18,6 @@ import {
   saveRefreshToken,
   consumeRefreshToken,
   savePublicKey,
-  getClient,
 } from './store.js';
 import {
   signAccessToken,
@@ -63,7 +62,7 @@ export class AuthService {
 
   async issueTokens(clientId: string, clientSecret: string): Promise<TokenResponse | null> {
     const record = await verifyClientSecret(this.cache, clientId, clientSecret);
-    if (!record) return null;
+    if (!record) {return null;}
 
     const [{ token: accessToken, expiresIn }, refreshToken] = await Promise.all([
       signAccessToken(
@@ -88,11 +87,11 @@ export class AuthService {
   async refreshTokens(refreshToken: string): Promise<TokenResponse | null> {
     // Verify JWT signature first
     const jwtResult = await verifyRefreshToken(refreshToken, this.jwtConfig);
-    if (!jwtResult) return null;
+    if (!jwtResult) {return null;}
 
     // Consume from store (rotation — old token invalidated)
     const stored = await consumeRefreshToken(this.cache, refreshToken);
-    if (!stored) return null;
+    if (!stored) {return null;}
 
     // Reload client record to get current tier/namespace
     // We need to scan by hostId — store clientId → hostId mapping for lookup
@@ -117,7 +116,7 @@ export class AuthService {
 
   async verify(token: string): Promise<AuthContext | null> {
     const payload = await verifyAccessToken(token, this.jwtConfig);
-    if (!payload) return null;
+    if (!payload) {return null;}
 
     return {
       type: payload.type,

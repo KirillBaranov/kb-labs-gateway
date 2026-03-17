@@ -86,7 +86,7 @@ export async function verifyRefreshToken(
     if ((payload as JWTPayload & { type?: string }).type !== 'refresh') {
       return null;
     }
-    if (!payload.sub) return null;
+    if (!payload.sub) {return null;}
     return { hostId: payload.sub };
   } catch {
     return null;

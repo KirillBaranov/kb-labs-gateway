@@ -30,7 +30,7 @@
     "jose": "^5.9.6"
   },
   "devDependencies": {
-    "@kb-labs/devkit": "link:../../../kb-labs-devkit",
+    "@kb-labs/devkit": "workspace:*",
     "tsup": "^8.5.0",
     "vitest": "^3.2.4"
   }

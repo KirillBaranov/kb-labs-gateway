@@ -9,6 +9,12 @@
       "@kb-labs/core-config/*": [
         "../kb-labs-core/packages/core-config/src/*"
       ],
+      "@kb-labs/core-contracts": [
+        "../kb-labs-core/packages/core-contracts/src/index.ts"
+      ],
+      "@kb-labs/core-contracts/*": [
+        "../kb-labs-core/packages/core-contracts/src/*"
+      ],
       "@kb-labs/core-platform": [
         "../kb-labs-core/packages/core-platform/src/index.ts"
       ],
@@ -27,6 +33,12 @@
       "@kb-labs/core-sys/*": [
         "../kb-labs-core/packages/core-sys/src/*"
       ],
+      "@kb-labs/gateway-auth": [
+        "packages/gateway-auth/src/index.ts"
+      ],
+      "@kb-labs/gateway-auth/*": [
+        "packages/gateway-auth/src/*"
+      ],
       "@kb-labs/gateway-contracts": [
         "packages/gateway-contracts/src/index.ts"
       ],
@@ -38,6 +50,30 @@
       ],
       "@kb-labs/gateway-core/*": [
         "packages/gateway-core/src/*"
+      ],
+      "@kb-labs/host-agent-contracts": [
+        "../kb-labs-host-agent/packages/host-agent-contracts/src/index.ts"
+      ],
+      "@kb-labs/host-agent-contracts/*": [
+        "../kb-labs-host-agent/packages/host-agent-contracts/src/*"
+      ],
+      "@kb-labs/host-agent-core": [
+        "../kb-labs-host-agent/packages/host-agent-core/src/index.ts"
+      ],
+      "@kb-labs/host-agent-core/*": [
+        "../kb-labs-host-agent/packages/host-agent-core/src/*"
+      ],
+      "@kb-labs/plugin-contracts": [
+        "../kb-labs-plugin/packages/plugin-contracts/src/index.ts"
+      ],
+      "@kb-labs/plugin-contracts/*": [
+        "../kb-labs-plugin/packages/plugin-contracts/src/*"
+      ],
+      "@kb-labs/plugin-runtime": [
+        "../kb-labs-plugin/packages/plugin-runtime/src/index.ts"
+      ],
+      "@kb-labs/plugin-runtime/*": [
+        "../kb-labs-plugin/packages/plugin-runtime/src/*"
       ]
     }
   }

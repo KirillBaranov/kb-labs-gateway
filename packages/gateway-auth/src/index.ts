@@ -4,6 +4,7 @@ export type { JwtConfig } from './jwt.js';
 export {
   saveClient,
   getClient,
+  getClientByHostId,
   verifyClientSecret,
   buildClientRecord,
   saveRefreshToken,

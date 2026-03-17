@@ -49,6 +49,14 @@ export function generateHostId(): string {
 
 export async function saveClient(cache: ICache, record: ClientRecord): Promise<void> {
   await cache.set(`auth:client:${record.clientId}`, record);
+  // Reverse index: hostId → clientId for WS handler lookups
+  await cache.set(`auth:hostindex:${record.hostId}`, record.clientId);
+}
+
+export async function getClientByHostId(cache: ICache, hostId: string): Promise<ClientRecord | null> {
+  const clientId = await cache.get<string>(`auth:hostindex:${hostId}`);
+  if (!clientId) {return null;}
+  return getClient(cache, clientId);
 }
 
 export async function getClient(cache: ICache, clientId: string): Promise<ClientRecord | null> {
@@ -61,8 +69,8 @@ export async function verifyClientSecret(
   secret: string,
 ): Promise<ClientRecord | null> {
   const record = await getClient(cache, clientId);
-  if (!record) return null;
-  if (record.secretHash !== hashSecret(secret)) return null;
+  if (!record) {return null;}
+  if (record.secretHash !== hashSecret(secret)) {return null;}
   return record;
 }
 
@@ -103,7 +111,7 @@ export async function consumeRefreshToken(
 ): Promise<{ hostId: string; namespaceId: string } | null> {
   const key = `auth:refresh:${hashToken(token)}`;
   const entry = await cache.get<{ hostId: string; namespaceId: string }>(key);
-  if (!entry) return null;
+  if (!entry) {return null;}
   // Rotate: delete old token (new one will be issued)
   await cache.delete(key);
   return entry;

@@ -1,5 +1,4 @@
 import Fastify from 'fastify';
-import fastifyWebsocket from '@fastify/websocket';
 import fastifyCors from '@fastify/cors';
 import fastifyHttpProxy from '@fastify/http-proxy';
 import type { ICache, ILogger } from '@kb-labs/core-platform';
@@ -8,15 +7,21 @@ import { HostRegistrationSchema } from '@kb-labs/gateway-contracts';
 import { AuthService, type JwtConfig } from '@kb-labs/gateway-auth';
 import { createAuthMiddleware } from './auth/middleware.js';
 import { registerAuthRoutes } from './auth/routes.js';
+import { registerExecuteRoutes } from './execute/routes.js';
 import { HostRegistry } from './hosts/registry.js';
-import { createWsHandler } from './hosts/ws-handler.js';
+import { globalDispatcher } from './hosts/dispatcher.js';
+import { attachGatewayWs } from './ws/gateway-ws.js';
+
+function asMeta(arg: unknown): Record<string, unknown> | undefined {
+  return arg && typeof arg === 'object' && !Array.isArray(arg) ? (arg as Record<string, unknown>) : undefined;
+}
 
 function pinoCompatibleLogger(logger: ILogger) {
   return {
-    trace: (msg: string, ...args: unknown[]) => logger.debug(msg, ...args),
-    debug: (msg: string, ...args: unknown[]) => logger.debug(msg, ...args),
-    info: (msg: string, ...args: unknown[]) => logger.info(msg, ...args),
-    warn: (msg: string, ...args: unknown[]) => logger.warn(msg, ...args),
+    trace: (msg: string, ...args: unknown[]) => logger.debug(msg, asMeta(args[0])),
+    debug: (msg: string, ...args: unknown[]) => logger.debug(msg, asMeta(args[0])),
+    info: (msg: string, ...args: unknown[]) => logger.info(msg, asMeta(args[0])),
+    warn: (msg: string, ...args: unknown[]) => logger.warn(msg, asMeta(args[0])),
     error: (msg: string, ...args: unknown[]) => logger.error(msg, args[0] instanceof Error ? args[0] : undefined),
     fatal: (msg: string, ...args: unknown[]) => logger.error(`[FATAL] ${msg}`, args[0] instanceof Error ? args[0] : undefined),
     child: () => pinoCompatibleLogger(logger),
@@ -35,56 +40,118 @@ export async function createServer(
     loggerInstance: pinoCompatibleLogger(logger) as unknown as Parameters<typeof Fastify>[0]['loggerInstance'],
   });
 
-  // Plugins
-  await app.register(fastifyWebsocket);
   await app.register(fastifyCors, { origin: true });
 
-  // Auth middleware for all routes (onRequest fires before routing — applies to proxy plugins too)
-  app.addHook('onRequest', createAuthMiddleware(cache, jwtConfig));
-
-  // Auth service + public routes (/auth/register, /auth/token, /auth/refresh)
-  const authService = new AuthService(cache, jwtConfig);
-  registerAuthRoutes(app, authService);
-
-  // Health (public)
-  app.get('/health', async () => ({ status: 'ok', version: '1.0' }));
-
-  // Host registration (public)
-  const registry = new HostRegistry(cache);
-  app.post('/hosts/register', async (request, reply) => {
-    const parsed = HostRegistrationSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.code(400).send({ error: 'Bad Request', issues: parsed.error.issues });
-    }
-    const result = await registry.register(parsed.data);
-    return reply.code(201).send({
-      hostId: result.descriptor.hostId,
-      machineToken: result.machineToken,
-      status: result.descriptor.status,
-    });
-  });
-
-  // WebSocket — Host Agent connection
-  app.get('/hosts/connect', { websocket: true }, createWsHandler(cache));
-
-  // List hosts (auth required)
-  app.get('/hosts', async (request, reply) => {
-    const auth = request.authContext;
-    if (!auth) {return reply.code(401).send({ error: 'Unauthorized' });}
-    // TODO: scan cache by namespace pattern — return registered hosts
-    return { hosts: [] };
-  });
-
-  // Declarative proxy — register one handler per upstream from config
+  // ── Proxy upstreams ────────────────────────────────────────────────
+  // Registered FIRST, before any hooks. Auth is handled by upstreams themselves.
+  // @fastify/http-proxy with websocket:true intercepts upgrades at the HTTP
+  // server level — no Fastify hooks must touch these requests.
   for (const [name, upstream] of Object.entries(config.upstreams)) {
     await app.register(fastifyHttpProxy, {
       upstream: upstream.url,
       prefix: upstream.prefix,
-      rewritePrefix: upstream.prefix,
+      rewritePrefix: upstream.rewritePrefix ?? upstream.prefix,
       disableCache: true,
+      websocket: upstream.websocket ?? false,
     });
-    logger.info(`Upstream registered: ${name} → ${upstream.url} (${upstream.prefix})`);
+    logger.info(`Upstream registered: ${name} → ${upstream.url} (${upstream.prefix}${upstream.websocket ? ', ws' : ''})`);
   }
+
+  // ── Gateway's own routes (with auth) ───────────────────────────────
+  // Encapsulated scope: auth hook only applies to gateway-owned routes,
+  // not to proxy upstreams registered above.
+  await app.register(async function gatewayRoutes(scope) {
+    scope.addHook('onRequest', createAuthMiddleware(cache, jwtConfig));
+
+    // Auth service + public routes (/auth/register, /auth/token, /auth/refresh)
+    const authService = new AuthService(cache, jwtConfig);
+    registerAuthRoutes(scope as unknown as Parameters<typeof registerAuthRoutes>[0], authService);
+
+    // Health (public)
+    scope.get('/health', async () => ({ status: 'ok', version: '1.0' }));
+
+    // Host registration (public)
+    const registry = new HostRegistry(cache);
+    scope.post('/hosts/register', async (request, reply) => {
+      const parsed = HostRegistrationSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Bad Request', issues: parsed.error.issues });
+      }
+      const result = await registry.register(parsed.data);
+      return reply.code(201).send({
+        hostId: result.descriptor.hostId,
+        machineToken: result.machineToken,
+        status: result.descriptor.status,
+      });
+    });
+
+    // List hosts (auth required)
+    scope.get('/hosts', async (request, reply) => {
+      const auth = request.authContext;
+      if (!auth) {return reply.code(401).send({ error: 'Unauthorized' });}
+      const hosts = await registry.list(auth.namespaceId);
+      return { hosts };
+    });
+
+    // Execute endpoint — public API for CLI/Studio clients (auth required)
+    registerExecuteRoutes(scope as unknown as Parameters<typeof registerExecuteRoutes>[0], logger);
+
+    // Internal dispatch endpoint
+    const internalSecret = process.env.GATEWAY_INTERNAL_SECRET;
+    scope.post('/internal/dispatch', async (request, reply) => {
+      const provided = request.headers['x-internal-secret'];
+      if (!internalSecret || provided !== internalSecret) {
+        return reply.code(403).send({ error: 'Forbidden' });
+      }
+
+      const body = request.body as {
+        namespaceId?: string;
+        hostId?: string;
+        adapter?: string;
+        method?: string;
+        args?: unknown[];
+      };
+
+      if (!body.namespaceId || !body.adapter || !body.method) {
+        return reply.code(400).send({ error: 'Missing required fields: namespaceId, adapter, method' });
+      }
+
+      const hostId = body.hostId
+        ?? globalDispatcher.firstHostWithCapability(body.namespaceId, body.adapter)
+        ?? globalDispatcher.firstHost(body.namespaceId);
+      if (!hostId) {
+        return reply.code(503).send({
+          error: 'No host connected',
+          namespaceId: body.namespaceId,
+        });
+      }
+
+      try {
+        const result = await globalDispatcher.call(
+          body.namespaceId,
+          hostId,
+          body.adapter,
+          body.method,
+          body.args ?? [],
+        );
+        return { result };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message.includes('Host not connected')) {
+          return reply.code(503).send({ error: message });
+        }
+        return reply.code(502).send({ error: message });
+      }
+    });
+  });
+
+  // ── Gateway WebSocket endpoints ────────────────────────────────────
+  // Must be after ready() so http-proxy's upgrade listener is registered.
+  // attachGatewayWs captures it, removes it, and installs a unified handler
+  // that dispatches gateway WS paths to raw ws handlers and delegates
+  // everything else (upstream WS proxy) to http-proxy.
+  await app.ready();
+  attachGatewayWs(app.server, cache, jwtConfig, logger);
 
   return app;
 }

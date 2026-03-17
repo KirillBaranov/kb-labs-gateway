@@ -4,13 +4,16 @@ import type { AuthContext } from '@kb-labs/gateway-contracts';
 import type { JwtConfig } from '@kb-labs/gateway-auth';
 import { resolveToken, extractBearerToken } from './tokens.js';
 
-// Routes that don't require auth
+// Routes that don't require auth (handle their own auth internally)
 const PUBLIC_ROUTES = new Set([
   '/health',
   '/hosts/register',
+  // /hosts/connect and /clients/connect are handled at the HTTP upgrade level
+  // by gateway-ws.ts (raw ws) — they never reach Fastify routing.
   '/auth/register',
   '/auth/token',
   '/auth/refresh',
+  '/internal/dispatch', // has its own x-internal-secret auth
 ]);
 
 declare module 'fastify' {
@@ -26,7 +29,7 @@ export function createAuthMiddleware(cache: ICache, jwtConfig: JwtConfig) {
   ): Promise<void> {
     const rawPath = new URL(request.url, 'http://localhost').pathname;
     const routePath = rawPath.replace(/\/+/g, '/').replace(/\/+$/, '') || '/';
-    if (PUBLIC_ROUTES.has(routePath)) return;
+    if (PUBLIC_ROUTES.has(routePath)) {return;}
 
     // Bearer header takes precedence; fall back to ?access_token= for SSE
     // connections where browsers cannot set custom headers.

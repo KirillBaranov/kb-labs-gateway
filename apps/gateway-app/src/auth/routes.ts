@@ -6,7 +6,7 @@
  */
 
 import type { FastifyInstance } from 'fastify';
-import { AuthService } from '@kb-labs/gateway-auth';
+import type { AuthService } from '@kb-labs/gateway-auth';
 import {
   RegisterRequestSchema,
   TokenRequestSchema,

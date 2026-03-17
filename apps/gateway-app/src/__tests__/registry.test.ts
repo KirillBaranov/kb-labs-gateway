@@ -100,11 +100,12 @@ describe('HostRegistry.setOnline / setOffline', () => {
     expect(host.connections).toHaveLength(1);
   });
 
-  it('supports multiple connections', async () => {
+  it('each setOnline replaces connections with the new connectionId', async () => {
     await registry.setOnline(hostId, 'ns-1', 'conn-a');
     await registry.setOnline(hostId, 'ns-1', 'conn-b');
     const host = store.get(`host:registry:ns-1:${hostId}`) as HostDescriptor;
-    expect(host.connections).toHaveLength(2);
+    // New connection replaces stale ones — no accumulation across reconnects
+    expect(host.connections).toEqual(['conn-b']);
     expect(host.status).toBe('online');
   });
 
@@ -116,7 +117,9 @@ describe('HostRegistry.setOnline / setOffline', () => {
     expect(host.connections).toHaveLength(0);
   });
 
-  it('stays online when one connection of many is removed', async () => {
+  it('stays online when disconnected connectionId is not the current one', async () => {
+    // setOnline(conn-b) replaces list → connections=['conn-b']
+    // setOffline(conn-a) removes conn-a which is gone → connections=['conn-b'] → still online
     await registry.setOnline(hostId, 'ns-1', 'conn-a');
     await registry.setOnline(hostId, 'ns-1', 'conn-b');
     await registry.setOffline(hostId, 'ns-1', 'conn-a');

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const HostCapabilitySchema = z.enum(['filesystem', 'git', 'editor-context']);
+export const HostCapabilitySchema = z.enum(['filesystem', 'git', 'editor-context', 'execution']);
 
 export const HostRegistrationSchema = z.object({
   name: z.string(),

@@ -6,12 +6,16 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyCors from '@fastify/cors';
-import { WebSocket } from 'ws';
+import { WebSocket, type RawData } from 'ws';
 import type { ICache } from '@kb-labs/core-platform';
 import { HostRegistrationSchema } from '@kb-labs/gateway-contracts';
+import type { JwtConfig } from '@kb-labs/gateway-auth';
 import { createAuthMiddleware } from '../auth/middleware.js';
 import { HostRegistry } from '../hosts/registry.js';
 import { createWsHandler } from '../hosts/ws-handler.js';
+
+// Minimal jwtConfig for tests — JWT auth is disabled (empty secret forces fallback to cache tokens)
+const testJwtConfig: JwtConfig = { secret: 'test-secret-do-not-use' };
 
 // ── In-memory ICache ─────────────────────────────────────────────────────────
 
@@ -46,7 +50,7 @@ beforeAll(async () => {
 
   await app.register(fastifyWebsocket);
   await app.register(fastifyCors, { origin: true });
-  app.addHook('preHandler', createAuthMiddleware(cache));
+  app.addHook('preHandler', createAuthMiddleware(cache, testJwtConfig));
 
   app.get('/health', async () => ({ status: 'ok', version: '1.0' }));
 
@@ -62,7 +66,7 @@ beforeAll(async () => {
     });
   });
 
-  app.get('/hosts/connect', { websocket: true }, createWsHandler(cache));
+  app.get('/hosts/connect', { websocket: true }, createWsHandler(cache, testJwtConfig));
 
   const address = await app.listen({ port: 0, host: '127.0.0.1' }); // port 0 = random
   baseUrl = address;
@@ -97,7 +101,7 @@ function collectMessages(ws: WebSocket, count: number, timeout = 3000): Promise<
       reject(new Error(`Timeout: expected ${count} messages, got ${msgs.length}: ${JSON.stringify(msgs)}`));
     }, timeout);
 
-    ws.on('message', (raw) => {
+    ws.on('message', (raw: RawData) => {
       msgs.push(JSON.parse(raw.toString()));
       if (msgs.length >= count) {
         clearTimeout(timer);
@@ -105,7 +109,7 @@ function collectMessages(ws: WebSocket, count: number, timeout = 3000): Promise<
       }
     });
 
-    ws.on('error', (err) => { clearTimeout(timer); reject(err); });
+    ws.on('error', (err: Error) => { clearTimeout(timer); reject(err); });
   });
 }
 
@@ -115,7 +119,7 @@ describe('WebSocket: connection refused without auth', () => {
   it('closes immediately when no Authorization header', async () => {
     const ws = new WebSocket(`${wsUrl}/hosts/connect`); // no auth header
     const closeCode = await new Promise<number>((resolve) => {
-      ws.on('close', (code) => resolve(code));
+      ws.on('close', (code: number) => resolve(code));
       ws.on('error', () => {}); // suppress
     });
     // 1008 = Policy Violation (explicit close from server)
@@ -129,7 +133,7 @@ describe('WebSocket: connection refused without auth', () => {
     // ws token resolves as CLI (not machine) — should be rejected in ws-handler
     // The handler checks tokenEntry.type !== 'machine'
     const closeCode = await new Promise<number>((resolve) => {
-      ws.on('close', (code) => resolve(code));
+      ws.on('close', (code: number) => resolve(code));
       ws.on('open', () => {
         // If opened, send hello — handler will auth-check and close
       });
@@ -182,7 +186,7 @@ describe('WebSocket: full handshake', () => {
       let gotConnected = false;
       const timer = setTimeout(() => reject(new Error('timeout')), 5000);
 
-      ws.on('message', (raw) => {
+      ws.on('message', (raw: RawData) => {
         const msg = JSON.parse(raw.toString()) as { type: string };
         if (msg.type === 'connected' && !gotConnected) {
           gotConnected = true;
@@ -214,8 +218,8 @@ describe('WebSocket: full handshake', () => {
 
     // Should receive 'negotiate' message and then close
     const closeCode = await new Promise<number>((resolve) => {
-      ws.on('message', (raw) => { msgs.push(JSON.parse(raw.toString())); });
-      ws.on('close', (code) => resolve(code));
+      ws.on('message', (raw: RawData) => { msgs.push(JSON.parse(raw.toString())); });
+      ws.on('close', (code: number) => resolve(code));
       setTimeout(() => resolve(1008), 4000);
     });
 
@@ -235,7 +239,7 @@ describe('WebSocket: full handshake', () => {
     });
 
     const closeCode = await new Promise<number>((resolve) => {
-      ws.on('close', (code) => resolve(code));
+      ws.on('close', (code: number) => resolve(code));
       setTimeout(() => resolve(-1), 8000); // wait longer than HELLO_TIMEOUT_MS (5s)
     });
 
@@ -252,7 +256,7 @@ describe('WebSocket: host status lifecycle', () => {
       ws.on('open', () => {
         ws.send(JSON.stringify({ type: 'hello', protocolVersion: '1.0', agentVersion: '0.1.0' }));
       });
-      ws.on('message', (raw) => {
+      ws.on('message', (raw: RawData) => {
         const msg = JSON.parse(raw.toString()) as { type: string };
         if (msg.type === 'connected') {resolve();}
       });
