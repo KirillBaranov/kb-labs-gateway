@@ -187,6 +187,46 @@ export async function createServer(
         return reply.code(502).send({ error: message });
       }
     });
+
+    // Internal host resolution endpoint
+    scope.post('/internal/resolve-host', async (request, reply) => {
+      const provided = request.headers['x-internal-secret'];
+      if (!internalSecret || provided !== internalSecret) {
+        return reply.code(403).send({ error: 'Forbidden' });
+      }
+
+      const body = request.body as {
+        namespaceId?: string;
+        target?: {
+          hostId?: string;
+          hostSelection?: string;
+          repoFingerprint?: string;
+        };
+      };
+
+      const namespaceId = body.namespaceId ?? 'default';
+      const target = body.target ?? {};
+      const strategy = (target.hostSelection ?? 'any-matching') as string;
+
+      let hostId: string | undefined;
+
+      if (strategy === 'pinned' && target.hostId) {
+        // Verify host exists and is online
+        const host = await hostRegistry.get(target.hostId, namespaceId);
+        if (host?.status === 'online') {
+          hostId = target.hostId;
+        }
+      } else {
+        // any-matching / prefer-local / prefer-cloud: find first with execution capability
+        hostId = globalDispatcher.firstHostWithCapability(namespaceId, 'execution');
+      }
+
+      if (!hostId) {
+        return reply.code(404).send({ error: 'No matching host found' });
+      }
+
+      return { hostId, strategy, namespaceId };
+    });
   });
 
   // ── Gateway WebSocket endpoints ────────────────────────────────────
