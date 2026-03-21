@@ -1,18 +1,46 @@
 import { randomUUID } from 'node:crypto';
 import type { ICache } from '@kb-labs/core-platform';
-import type { HostDescriptor, HostRegistration } from '@kb-labs/gateway-contracts';
+import type { HostDescriptor, HostRegistration, IHostStore } from '@kb-labs/gateway-contracts';
 
 export interface HostRegisterResult {
   descriptor: HostDescriptor;
   machineToken: string;
 }
 
+/**
+ * Host Registry — coordinates cache (hot) and store (cold) layers.
+ *
+ * - Cache: online/offline status, connections, heartbeat (transient)
+ * - Store: host descriptors, tokens (durable, survives restarts)
+ *
+ * Write path: store.save() + cache.set()
+ * Read path: cache.get() ?? store.get() → cache warm
+ */
 export class HostRegistry {
-  constructor(private readonly cache: ICache) {}
+  constructor(
+    private readonly cache: ICache,
+    private readonly store?: IHostStore,
+  ) {}
+
+  /**
+   * Restore hosts from persistent store into cache on startup.
+   * All restored hosts start as offline — live status comes from WS connections.
+   */
+  async restore(): Promise<number> {
+    if (!this.store) return 0;
+    const hosts = await this.store.listAll();
+    for (const host of hosts) {
+      const cacheKey = this.hostKey(host.namespaceId, host.hostId);
+      await this.cache.set(cacheKey, { ...host, status: 'offline', connections: [] });
+      await this.addToIndex(host.namespaceId, host.hostId);
+    }
+    return hosts.length;
+  }
 
   async register(reg: HostRegistration): Promise<HostRegisterResult> {
-    const hostId = randomUUID();
+    const hostId = `host_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
     const machineToken = randomUUID();
+    const now = Date.now();
 
     const descriptor: HostDescriptor = {
       hostId,
@@ -20,65 +48,119 @@ export class HostRegistry {
       namespaceId: reg.namespaceId,
       capabilities: reg.capabilities,
       status: 'offline',
-      lastSeen: Date.now(),
+      lastSeen: now,
       connections: [],
+      hostType: reg.hostType,
+      createdAt: now,
+      updatedAt: now,
     };
 
-    await this.cache.set(`host:registry:${reg.namespaceId}:${hostId}`, descriptor);
-    await this.cache.set(`host:token:${machineToken}`, {
-      hostId,
-      namespaceId: reg.namespaceId,
-    });
-
-    // Maintain namespace index so list() can find this host
-    const indexKey = `host:index:${reg.namespaceId}`;
-    const hostIds = (await this.cache.get<string[]>(indexKey)) ?? [];
-    if (!hostIds.includes(hostId)) {
-      await this.cache.set(indexKey, [...hostIds, hostId]);
+    // Persist to store (durable)
+    if (this.store) {
+      await this.store.save(descriptor);
+      await this.store.saveToken(machineToken, hostId, reg.namespaceId);
     }
+
+    // Write to cache (hot)
+    await this.cache.set(this.hostKey(reg.namespaceId, hostId), descriptor);
+    await this.cache.set(this.tokenKey(machineToken), { hostId, namespaceId: reg.namespaceId });
+    await this.addToIndex(reg.namespaceId, hostId);
 
     return { descriptor, machineToken };
   }
 
   async setOnline(hostId: string, namespaceId: string, connectionId: string): Promise<void> {
-    const key = `host:registry:${namespaceId}:${hostId}`;
-    const host = await this.cache.get<HostDescriptor>(key);
-    if (!host) {return;}
-    // One active connection per connect event — replace stale list from previous runs
-    await this.cache.set(key, { ...host, status: 'online', lastSeen: Date.now(), connections: [connectionId] });
+    const host = await this.getFromCache(hostId, namespaceId);
+    if (!host) return;
+    await this.cache.set(this.hostKey(namespaceId, hostId), {
+      ...host,
+      status: 'online',
+      lastSeen: Date.now(),
+      connections: [connectionId],
+    });
   }
 
   async setOffline(hostId: string, namespaceId: string, connectionId: string): Promise<void> {
-    const key = `host:registry:${namespaceId}:${hostId}`;
-    const host = await this.cache.get<HostDescriptor>(key);
-    if (!host) {return;}
+    const host = await this.getFromCache(hostId, namespaceId);
+    if (!host) return;
     const connections = host.connections.filter((c) => c !== connectionId);
     const status = connections.length > 0 ? 'online' : 'offline';
-    await this.cache.set(key, { ...host, status, lastSeen: Date.now(), connections });
+    await this.cache.set(this.hostKey(namespaceId, hostId), {
+      ...host,
+      status,
+      lastSeen: Date.now(),
+      connections,
+    });
   }
 
   async heartbeat(hostId: string, namespaceId: string): Promise<void> {
-    const key = `host:registry:${namespaceId}:${hostId}`;
-    const host = await this.cache.get<HostDescriptor>(key);
-    if (!host) {return;}
-    await this.cache.set(key, { ...host, lastSeen: Date.now() });
+    const host = await this.getFromCache(hostId, namespaceId);
+    if (!host) return;
+    await this.cache.set(this.hostKey(namespaceId, hostId), { ...host, lastSeen: Date.now() });
   }
 
   async get(hostId: string, namespaceId: string): Promise<HostDescriptor | null> {
-    return this.cache.get<HostDescriptor>(`host:registry:${namespaceId}:${hostId}`);
+    // Try cache first (hot)
+    const cached = await this.cache.get<HostDescriptor>(this.hostKey(namespaceId, hostId));
+    if (cached) return cached;
+
+    // Fall through to store (cold)
+    if (!this.store) return null;
+    const stored = await this.store.get(hostId, namespaceId);
+    if (!stored) return null;
+
+    // Warm cache
+    await this.cache.set(this.hostKey(namespaceId, hostId), { ...stored, status: 'offline', connections: [] });
+    await this.addToIndex(namespaceId, hostId);
+    return { ...stored, status: 'offline', connections: [] };
   }
 
   async resolveToken(token: string): Promise<{ hostId: string; namespaceId: string } | null> {
-    return this.cache.get<{ hostId: string; namespaceId: string }>(`host:token:${token}`);
+    // Try cache first
+    const cached = await this.cache.get<{ hostId: string; namespaceId: string }>(this.tokenKey(token));
+    if (cached) return cached;
+
+    // Fall through to store
+    if (!this.store) return null;
+    const stored = await this.store.resolveToken(token);
+    if (!stored) return null;
+
+    // Warm cache
+    await this.cache.set(this.tokenKey(token), stored);
+    return stored;
   }
 
   async list(namespaceId: string): Promise<HostDescriptor[]> {
+    // Use store as authoritative source if available
+    if (this.store) {
+      const persisted = await this.store.list(namespaceId);
+      // Enrich with live status from cache
+      return Promise.all(
+        persisted.map(async (host) => {
+          const cached = await this.cache.get<HostDescriptor>(this.hostKey(namespaceId, host.hostId));
+          return cached ?? { ...host, status: 'offline' as const, connections: [] };
+        }),
+      );
+    }
+
+    // Fallback: cache-only (no store)
     const indexKey = `host:index:${namespaceId}`;
     const hostIds = (await this.cache.get<string[]>(indexKey)) ?? [];
     const results = await Promise.all(
-      hostIds.map((id) => this.cache.get<HostDescriptor>(`host:registry:${namespaceId}:${id}`)),
+      hostIds.map((id) => this.cache.get<HostDescriptor>(this.hostKey(namespaceId, id))),
     );
     return results.filter((h): h is HostDescriptor => h !== null);
+  }
+
+  async deregister(hostId: string, namespaceId: string): Promise<boolean> {
+    // Remove from store
+    const deleted = this.store ? await this.store.delete(hostId, namespaceId) : false;
+
+    // Remove from cache
+    await this.cache.delete(this.hostKey(namespaceId, hostId));
+    await this.removeFromIndex(namespaceId, hostId);
+
+    return deleted;
   }
 
   async ensureRegistered(
@@ -87,32 +169,59 @@ export class HostRegistry {
     name: string,
     capabilities: HostDescriptor['capabilities'] = [],
   ): Promise<void> {
-    const key = `host:registry:${namespaceId}:${hostId}`;
-    const existing = await this.cache.get<HostDescriptor>(key);
+    const existing = await this.get(hostId, namespaceId);
     if (existing) {
-      // Update capabilities if they changed since last registration
       if (capabilities.length > 0 && JSON.stringify(existing.capabilities) !== JSON.stringify(capabilities)) {
-        await this.cache.set(key, { ...existing, capabilities });
+        const updated = { ...existing, capabilities, updatedAt: Date.now() };
+        if (this.store) await this.store.save(updated);
+        await this.cache.set(this.hostKey(namespaceId, hostId), updated);
       }
       return;
     }
 
+    const now = Date.now();
     const descriptor: HostDescriptor = {
       hostId,
       name,
       namespaceId,
       capabilities,
       status: 'offline',
-      lastSeen: Date.now(),
+      lastSeen: now,
       connections: [],
+      createdAt: now,
+      updatedAt: now,
     };
-    await this.cache.set(key, descriptor);
 
-    // Maintain namespace index
+    if (this.store) await this.store.save(descriptor);
+    await this.cache.set(this.hostKey(namespaceId, hostId), descriptor);
+    await this.addToIndex(namespaceId, hostId);
+  }
+
+  // ── Private helpers ──────────────────────────────────────────────
+
+  private hostKey(namespaceId: string, hostId: string): string {
+    return `host:registry:${namespaceId}:${hostId}`;
+  }
+
+  private tokenKey(token: string): string {
+    return `host:token:${token}`;
+  }
+
+  private async getFromCache(hostId: string, namespaceId: string): Promise<HostDescriptor | null> {
+    return this.cache.get<HostDescriptor>(this.hostKey(namespaceId, hostId));
+  }
+
+  private async addToIndex(namespaceId: string, hostId: string): Promise<void> {
     const indexKey = `host:index:${namespaceId}`;
     const hostIds = (await this.cache.get<string[]>(indexKey)) ?? [];
     if (!hostIds.includes(hostId)) {
       await this.cache.set(indexKey, [...hostIds, hostId]);
     }
+  }
+
+  private async removeFromIndex(namespaceId: string, hostId: string): Promise<void> {
+    const indexKey = `host:index:${namespaceId}`;
+    const hostIds = (await this.cache.get<string[]>(indexKey)) ?? [];
+    await this.cache.set(indexKey, hostIds.filter((id) => id !== hostId));
   }
 }

@@ -1,6 +1,9 @@
 import { platform, createServiceBootstrap } from '@kb-labs/core-runtime';
+import type { IHostStore } from '@kb-labs/gateway-contracts';
+import { SqliteHostStore } from '@kb-labs/gateway-core';
 import { loadGatewayConfig } from './config.js';
 import { createServer } from './server.js';
+import { HostRegistry } from './hosts/registry.js';
 
 export async function bootstrap(repoRoot: string = process.cwd()): Promise<void> {
   // 1. Initialize platform (loads .env + adapters from kb.config.json)
@@ -16,27 +19,46 @@ export async function bootstrap(repoRoot: string = process.cwd()): Promise<void>
     upstreams: Object.keys(config.upstreams),
   });
 
-  // 3. Seed static tokens into ICache so resolveToken() accepts them
+  // 3. Create persistent host store (SQLite if available, otherwise cache-only)
+  let hostStore: IHostStore | undefined;
+  const db = platform.getAdapter<import('@kb-labs/core-platform').ISQLDatabase>('sqlDatabase');
+  if (db) {
+    hostStore = new SqliteHostStore(db);
+    logger.info('Host store: SQLite (persistent)');
+  } else {
+    logger.warn('Host store: none (cache-only, hosts will be lost on restart)');
+  }
+
+  // 4. Create host registry with cache + store
+  const registry = new HostRegistry(platform.cache, hostStore);
+
+  // 5. Restore persisted hosts into cache
+  const restoredCount = await registry.restore();
+  if (restoredCount > 0) {
+    logger.info('Restored hosts from store', { count: restoredCount });
+  }
+
+  // 6. Seed static tokens into cache so resolveToken() accepts them
   for (const [token, entry] of Object.entries(config.staticTokens)) {
     await platform.cache.set(`host:token:${token}`, entry);
     logger.info('Static token seeded', { hostId: entry.hostId, namespaceId: entry.namespaceId });
   }
 
-  // 4. Build JWT config — secret from env, required in production
+  // 7. Build JWT config — secret from env, required in production
   const jwtSecret = process.env.GATEWAY_JWT_SECRET;
   if (!jwtSecret) {
     logger.warn('GATEWAY_JWT_SECRET not set — using insecure default (dev only!)');
   }
   const jwtConfig = { secret: jwtSecret ?? 'dev-insecure-secret-change-me' };
 
-  // 5. Create server
-  const server = await createServer(config, platform.cache, platform.logger, jwtConfig);
+  // 8. Create server with injected registry
+  const server = await createServer(config, platform.cache, platform.logger, jwtConfig, registry);
 
-  // 6. Listen
+  // 9. Listen
   const address = await server.listen({ port: config.port, host: '0.0.0.0' });
   logger.info('Gateway listening', { address });
 
-  // 7. Graceful shutdown
+  // 10. Graceful shutdown
   const shutdown = async (signal: string) => {
     logger.warn('Received shutdown signal', { signal });
     await platform.shutdown();

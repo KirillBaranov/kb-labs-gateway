@@ -35,6 +35,7 @@ export async function createServer(
   cache: ICache,
   logger: ILogger,
   jwtConfig: JwtConfig,
+  registry?: HostRegistry,
 ) {
   const app = Fastify({
     loggerInstance: pinoCompatibleLogger(logger) as unknown as Parameters<typeof Fastify>[0]['loggerInstance'],
@@ -46,6 +47,10 @@ export async function createServer(
   // Registered FIRST, before any hooks. Auth is handled by upstreams themselves.
   // @fastify/http-proxy with websocket:true intercepts upgrades at the HTTP
   // server level — no Fastify hooks must touch these requests.
+  // Gateway is a dumb proxy — real per-route timeout enforcement lives in REST API.
+  // 1 hour hard ceiling; anything longer should be a background job.
+  const PROXY_TIMEOUT_MS = 3_600_000;
+
   for (const [name, upstream] of Object.entries(config.upstreams)) {
     await app.register(fastifyHttpProxy, {
       upstream: upstream.url,
@@ -53,6 +58,11 @@ export async function createServer(
       rewritePrefix: upstream.rewritePrefix ?? upstream.prefix,
       disableCache: true,
       websocket: upstream.websocket ?? false,
+      http: {
+        requestOptions: {
+          timeout: PROXY_TIMEOUT_MS,
+        },
+      },
     });
     logger.info(`Upstream registered: ${name} → ${upstream.url} (${upstream.prefix}${upstream.websocket ? ', ws' : ''})`);
   }
@@ -71,13 +81,14 @@ export async function createServer(
     scope.get('/health', async () => ({ status: 'ok', version: '1.0' }));
 
     // Host registration (public)
-    const registry = new HostRegistry(cache);
+    // Use injected registry (with persistence) or fallback to cache-only
+    const hostRegistry = registry ?? new HostRegistry(cache);
     scope.post('/hosts/register', async (request, reply) => {
       const parsed = HostRegistrationSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.code(400).send({ error: 'Bad Request', issues: parsed.error.issues });
       }
-      const result = await registry.register(parsed.data);
+      const result = await hostRegistry.register(parsed.data);
       return reply.code(201).send({
         hostId: result.descriptor.hostId,
         machineToken: result.machineToken,
@@ -88,9 +99,29 @@ export async function createServer(
     // List hosts (auth required)
     scope.get('/hosts', async (request, reply) => {
       const auth = request.authContext;
-      if (!auth) {return reply.code(401).send({ error: 'Unauthorized' });}
-      const hosts = await registry.list(auth.namespaceId);
+      if (!auth) return reply.code(401).send({ error: 'Unauthorized' });
+      const hosts = await hostRegistry.list(auth.namespaceId);
       return { hosts };
+    });
+
+    // Get host by ID (auth required)
+    scope.get('/hosts/:hostId', async (request, reply) => {
+      const auth = request.authContext;
+      if (!auth) return reply.code(401).send({ error: 'Unauthorized' });
+      const { hostId } = request.params as { hostId: string };
+      const host = await hostRegistry.get(hostId, auth.namespaceId);
+      if (!host) return reply.code(404).send({ error: 'Host not found' });
+      return host;
+    });
+
+    // Deregister host (auth required)
+    scope.delete('/hosts/:hostId', async (request, reply) => {
+      const auth = request.authContext;
+      if (!auth) return reply.code(401).send({ error: 'Unauthorized' });
+      const { hostId } = request.params as { hostId: string };
+      const deleted = await hostRegistry.deregister(hostId, auth.namespaceId);
+      if (!deleted) return reply.code(404).send({ error: 'Host not found' });
+      return reply.code(204).send();
     });
 
     // Execute endpoint — public API for CLI/Studio clients (auth required)
