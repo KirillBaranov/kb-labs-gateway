@@ -58,7 +58,7 @@ function createInMemoryDb(): ISQLDatabase {
         } else if (tableName === 'host_tokens') {
           key = row.token as string;
         } else {
-          key = String(row[columns[0]]);
+          key = String(row[columns[0]!]);
         }
 
         // ON CONFLICT: update if exists

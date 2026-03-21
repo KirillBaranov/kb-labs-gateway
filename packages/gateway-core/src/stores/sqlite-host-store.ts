@@ -74,7 +74,7 @@ export class SqliteHostStore implements IHostStore {
   constructor(private readonly db: ISQLDatabase) {}
 
   private async migrate(): Promise<void> {
-    if (this.migrated) return;
+    if (this.migrated) {return;}
     if (this.db.exec) {
       await this.db.exec(HOSTS_DDL);
       await this.db.exec(TOKENS_DDL);

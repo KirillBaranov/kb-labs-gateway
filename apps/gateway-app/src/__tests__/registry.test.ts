@@ -235,13 +235,13 @@ describe('HostRegistry with IHostStore (dual-layer)', () => {
 
       // Store has the host
       expect(hosts.size).toBe(1);
-      const stored = [...hosts.values()][0];
+      const stored = [...hosts.values()][0]!;
       expect(stored.hostId).toBe(result.descriptor.hostId);
       expect(stored.name).toBe('dual-host');
 
       // Store has the token
       expect(tokens.size).toBe(1);
-      const tokenEntry = [...tokens.values()][0];
+      const tokenEntry = [...tokens.values()][0]!;
       expect(tokenEntry.hostId).toBe(result.descriptor.hostId);
 
       // store.save and store.saveToken were called
