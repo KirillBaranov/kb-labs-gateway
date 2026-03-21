@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HostRegistry } from '../hosts/registry.js';
 import type { ICache } from '@kb-labs/core-platform';
-import type { HostDescriptor } from '@kb-labs/gateway-contracts';
+import type { HostDescriptor, IHostStore } from '@kb-labs/gateway-contracts';
 
 function makeCache(): { cache: ICache; store: Map<string, unknown> } {
   const store = new Map<string, unknown>();
@@ -190,5 +190,281 @@ describe('HostRegistry.resolveToken', () => {
     const { cache } = makeCache();
     const registry = new HostRegistry(cache);
     expect(await registry.resolveToken('bad-token')).toBeNull();
+  });
+});
+
+// ── Dual-layer tests (cache + store) ──────────────────────────────
+
+function makeHostStore(): { hostStore: IHostStore; hosts: Map<string, HostDescriptor>; tokens: Map<string, { hostId: string; namespaceId: string }> } {
+  const hosts = new Map<string, HostDescriptor>();
+  const tokens = new Map<string, { hostId: string; namespaceId: string }>();
+
+  const hostStore: IHostStore = {
+    save: vi.fn(async (d: HostDescriptor) => { hosts.set(`${d.hostId}:${d.namespaceId}`, d); }),
+    get: vi.fn(async (hostId: string, ns: string) => hosts.get(`${hostId}:${ns}`) ?? null),
+    list: vi.fn(async (ns: string) => [...hosts.values()].filter(h => h.namespaceId === ns)),
+    listAll: vi.fn(async () => [...hosts.values()]),
+    delete: vi.fn(async (hostId: string, ns: string) => {
+      const key = `${hostId}:${ns}`;
+      if (!hosts.has(key)) return false;
+      hosts.delete(key);
+      // Also remove tokens for this host
+      for (const [tok, entry] of tokens) {
+        if (entry.hostId === hostId && entry.namespaceId === ns) tokens.delete(tok);
+      }
+      return true;
+    }),
+    saveToken: vi.fn(async (token: string, hostId: string, ns: string) => { tokens.set(token, { hostId, namespaceId: ns }); }),
+    resolveToken: vi.fn(async (token: string) => tokens.get(token) ?? null),
+    deleteToken: vi.fn(async (token: string) => { tokens.delete(token); }),
+  };
+
+  return { hostStore, hosts, tokens };
+}
+
+describe('HostRegistry with IHostStore (dual-layer)', () => {
+  describe('register', () => {
+    it('writes to both cache and store', async () => {
+      const { cache } = makeCache();
+      const { hostStore, hosts, tokens } = makeHostStore();
+      const registry = new HostRegistry(cache, hostStore);
+
+      const result = await registry.register({
+        name: 'dual-host', namespaceId: 'ns', capabilities: ['filesystem'], workspacePaths: [],
+      });
+
+      // Store has the host
+      expect(hosts.size).toBe(1);
+      const stored = [...hosts.values()][0];
+      expect(stored.hostId).toBe(result.descriptor.hostId);
+      expect(stored.name).toBe('dual-host');
+
+      // Store has the token
+      expect(tokens.size).toBe(1);
+      const tokenEntry = [...tokens.values()][0];
+      expect(tokenEntry.hostId).toBe(result.descriptor.hostId);
+
+      // store.save and store.saveToken were called
+      expect(hostStore.save).toHaveBeenCalledTimes(1);
+      expect(hostStore.saveToken).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('restore', () => {
+    it('loads all hosts from store into cache as offline', async () => {
+      const { cache, store: cacheMap } = makeCache();
+      const { hostStore, hosts } = makeHostStore();
+
+      // Pre-populate store with 2 hosts
+      const h1: HostDescriptor = {
+        hostId: 'h1', name: 'host-one', namespaceId: 'ns',
+        capabilities: ['filesystem'], status: 'online', lastSeen: 100,
+        connections: ['old-conn'], createdAt: 100, updatedAt: 100,
+      };
+      const h2: HostDescriptor = {
+        hostId: 'h2', name: 'host-two', namespaceId: 'ns',
+        capabilities: ['git'], status: 'online', lastSeen: 200,
+        connections: ['old-conn-2'], createdAt: 200, updatedAt: 200,
+      };
+      hosts.set('h1:ns', h1);
+      hosts.set('h2:ns', h2);
+
+      const registry = new HostRegistry(cache, hostStore);
+      const count = await registry.restore();
+
+      expect(count).toBe(2);
+
+      // Both in cache, but as offline with no connections
+      const cached1 = cacheMap.get('host:registry:ns:h1') as HostDescriptor;
+      expect(cached1.status).toBe('offline');
+      expect(cached1.connections).toEqual([]);
+      expect(cached1.name).toBe('host-one');
+
+      const cached2 = cacheMap.get('host:registry:ns:h2') as HostDescriptor;
+      expect(cached2.status).toBe('offline');
+      expect(cached2.connections).toEqual([]);
+    });
+
+    it('returns 0 when store is empty', async () => {
+      const { cache } = makeCache();
+      const { hostStore } = makeHostStore();
+      const registry = new HostRegistry(cache, hostStore);
+
+      expect(await registry.restore()).toBe(0);
+    });
+
+    it('returns 0 when no store provided', async () => {
+      const { cache } = makeCache();
+      const registry = new HostRegistry(cache);
+
+      expect(await registry.restore()).toBe(0);
+    });
+  });
+
+  describe('get (cache miss → store fallback)', () => {
+    it('falls through to store when cache misses', async () => {
+      const { cache, store: cacheMap } = makeCache();
+      const { hostStore, hosts } = makeHostStore();
+
+      // Host in store but NOT in cache
+      hosts.set('h1:ns', {
+        hostId: 'h1', name: 'stored-host', namespaceId: 'ns',
+        capabilities: ['filesystem'], status: 'online', lastSeen: 100,
+        connections: ['old'], createdAt: 100, updatedAt: 100,
+      });
+
+      const registry = new HostRegistry(cache, hostStore);
+      const result = await registry.get('h1', 'ns');
+
+      expect(result).not.toBeNull();
+      expect(result!.name).toBe('stored-host');
+      expect(result!.status).toBe('offline'); // always offline from store
+      expect(result!.connections).toEqual([]);
+
+      // Cache should now be warmed
+      expect(cacheMap.has('host:registry:ns:h1')).toBe(true);
+    });
+
+    it('returns null when both cache and store miss', async () => {
+      const { cache } = makeCache();
+      const { hostStore } = makeHostStore();
+      const registry = new HostRegistry(cache, hostStore);
+
+      expect(await registry.get('ghost', 'ns')).toBeNull();
+    });
+
+    it('prefers cache over store', async () => {
+      const { cache, store: cacheMap } = makeCache();
+      const { hostStore, hosts } = makeHostStore();
+
+      // Same host in both, different names
+      cacheMap.set('host:registry:ns:h1', {
+        hostId: 'h1', name: 'cache-version', namespaceId: 'ns',
+        capabilities: [], status: 'online', lastSeen: 200,
+        connections: ['live-conn'],
+      });
+      hosts.set('h1:ns', {
+        hostId: 'h1', name: 'store-version', namespaceId: 'ns',
+        capabilities: [], status: 'offline', lastSeen: 100,
+        connections: [], createdAt: 100, updatedAt: 100,
+      });
+
+      const registry = new HostRegistry(cache, hostStore);
+      const result = await registry.get('h1', 'ns');
+
+      expect(result!.name).toBe('cache-version');
+      expect(result!.status).toBe('online');
+      expect(hostStore.get).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resolveToken (cache miss → store fallback)', () => {
+    it('falls through to store when cache misses', async () => {
+      const { cache, store: cacheMap } = makeCache();
+      const { hostStore, tokens } = makeHostStore();
+
+      tokens.set('secret-tok', { hostId: 'h1', namespaceId: 'ns' });
+
+      const registry = new HostRegistry(cache, hostStore);
+      const resolved = await registry.resolveToken('secret-tok');
+
+      expect(resolved).toEqual({ hostId: 'h1', namespaceId: 'ns' });
+      // Cache warmed
+      expect(cacheMap.has('host:token:secret-tok')).toBe(true);
+    });
+  });
+
+  describe('list (store authoritative)', () => {
+    it('uses store as source of truth, enriches with cache status', async () => {
+      const { cache, store: cacheMap } = makeCache();
+      const { hostStore, hosts } = makeHostStore();
+
+      // 2 hosts in store
+      hosts.set('h1:ns', {
+        hostId: 'h1', name: 'one', namespaceId: 'ns',
+        capabilities: [], status: 'offline', lastSeen: 100,
+        connections: [], createdAt: 100, updatedAt: 100,
+      });
+      hosts.set('h2:ns', {
+        hostId: 'h2', name: 'two', namespaceId: 'ns',
+        capabilities: [], status: 'offline', lastSeen: 100,
+        connections: [], createdAt: 100, updatedAt: 100,
+      });
+
+      // h1 is online in cache
+      cacheMap.set('host:registry:ns:h1', {
+        hostId: 'h1', name: 'one', namespaceId: 'ns',
+        capabilities: [], status: 'online', lastSeen: 200,
+        connections: ['conn-live'],
+      });
+
+      const registry = new HostRegistry(cache, hostStore);
+      const result = await registry.list('ns');
+
+      expect(result).toHaveLength(2);
+
+      const h1 = result.find(h => h.hostId === 'h1')!;
+      expect(h1.status).toBe('online'); // enriched from cache
+
+      const h2 = result.find(h => h.hostId === 'h2')!;
+      expect(h2.status).toBe('offline'); // no cache entry
+    });
+  });
+
+  describe('deregister', () => {
+    it('removes from both cache and store', async () => {
+      const { cache, store: cacheMap } = makeCache();
+      const { hostStore, hosts } = makeHostStore();
+      const registry = new HostRegistry(cache, hostStore);
+
+      const { descriptor } = await registry.register({
+        name: 'doomed', namespaceId: 'ns', capabilities: [], workspacePaths: [],
+      });
+
+      expect(hosts.size).toBe(1);
+      expect(cacheMap.has(`host:registry:ns:${descriptor.hostId}`)).toBe(true);
+
+      const deleted = await registry.deregister(descriptor.hostId, 'ns');
+      expect(deleted).toBe(true);
+
+      // Gone from store
+      expect(hosts.size).toBe(0);
+      // Gone from cache
+      expect(cacheMap.has(`host:registry:ns:${descriptor.hostId}`)).toBe(false);
+    });
+
+    it('returns false for non-existent host', async () => {
+      const { cache } = makeCache();
+      const { hostStore } = makeHostStore();
+      const registry = new HostRegistry(cache, hostStore);
+
+      expect(await registry.deregister('ghost', 'ns')).toBe(false);
+    });
+  });
+
+  describe('ensureRegistered', () => {
+    it('persists to store when host does not exist', async () => {
+      const { cache } = makeCache();
+      const { hostStore, hosts } = makeHostStore();
+      const registry = new HostRegistry(cache, hostStore);
+
+      await registry.ensureRegistered('h1', 'ns', 'new-host', ['filesystem']);
+
+      expect(hosts.size).toBe(1);
+      expect(hosts.get('h1:ns')!.name).toBe('new-host');
+      expect(hostStore.save).toHaveBeenCalledTimes(1);
+    });
+
+    it('updates capabilities in store when they change', async () => {
+      const { cache } = makeCache();
+      const { hostStore, hosts } = makeHostStore();
+      const registry = new HostRegistry(cache, hostStore);
+
+      await registry.ensureRegistered('h1', 'ns', 'host', ['filesystem']);
+      await registry.ensureRegistered('h1', 'ns', 'host', ['filesystem', 'git']);
+
+      expect(hosts.get('h1:ns')!.capabilities).toEqual(['filesystem', 'git']);
+      expect(hostStore.save).toHaveBeenCalledTimes(2);
+    });
   });
 });
