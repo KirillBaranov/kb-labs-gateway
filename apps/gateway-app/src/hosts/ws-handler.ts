@@ -8,6 +8,8 @@ interface WsRequest {
 import type { ICache } from '@kb-labs/core-platform';
 import {
   HelloMessageSchema,
+  AdapterCallMessageSchema,
+  AdapterNameSchema,
   HostCapabilitySchema,
   SUPPORTED_PROTOCOL_VERSIONS,
   type OutboundMessage,
@@ -176,6 +178,10 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig) {
           case 'error':
             globalDispatcher.handleInbound(msg as { type: string; requestId?: string; data?: unknown; error?: unknown });
             break;
+
+          case 'adapter:call':
+            void handleAdapterCall(msg, socket, hostId, namespaceId);
+            break;
         }
       } catch {
         // ignore malformed messages
@@ -196,4 +202,91 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig) {
       await registry.setOffline(hostId, namespaceId, connectionId);
     });
   };
+
+  /**
+   * Handle adapter:call from Host — forward to REST API for platform service execution.
+   * Flow: Host → WS adapter:call → Gateway → HTTP POST /api/v1/internal/adapter-call → REST API
+   *
+   * @see ADR-0051: Bidirectional Gateway Protocol
+   */
+  async function handleAdapterCall(
+    msg: Record<string, unknown>,
+    socket: WebSocket,
+    hostId: string,
+    namespaceId: string,
+  ): Promise<void> {
+    const requestId = msg['requestId'] as string;
+
+    // 1. Validate message schema
+    const parsed = AdapterCallMessageSchema.safeParse(msg);
+    if (!parsed.success) {
+      send(socket, {
+        type: 'adapter:error',
+        requestId: requestId ?? 'unknown',
+        error: { code: 'INVALID_MESSAGE', message: parsed.error.message, retryable: false },
+      });
+      return;
+    }
+
+    const call = parsed.data;
+
+    // 2. Validate adapter is in allowlist
+    const adapterCheck = AdapterNameSchema.safeParse(call.adapter);
+    if (!adapterCheck.success) {
+      send(socket, {
+        type: 'adapter:error',
+        requestId: call.requestId,
+        error: { code: 'ADAPTER_CALL_REJECTED', message: `Adapter not allowed: ${call.adapter}`, retryable: false },
+      });
+      return;
+    }
+
+    // 3. Forward to REST API
+    const restApiUrl = process.env.REST_API_URL ?? 'http://localhost:5050';
+    const internalSecret = process.env.GATEWAY_INTERNAL_SECRET ?? '';
+
+    try {
+      const response = await fetch(`${restApiUrl}/api/v1/internal/adapter-call`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-secret': internalSecret,
+        },
+        body: JSON.stringify({
+          requestId: call.requestId,
+          adapter: call.adapter,
+          method: call.method,
+          args: call.args,
+          context: {
+            ...call.context,
+            namespaceId,
+            hostId,
+          },
+        }),
+      });
+
+      const body = await response.json() as { ok: boolean; result?: unknown; error?: unknown };
+
+      if (body.ok) {
+        send(socket, {
+          type: 'adapter:response',
+          requestId: call.requestId,
+          result: body.result,
+        });
+      } else {
+        send(socket, {
+          type: 'adapter:error',
+          requestId: call.requestId,
+          error: body.error ?? { code: 'ADAPTER_ERROR', message: 'Unknown error', retryable: false },
+        });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      send(socket, {
+        type: 'adapter:error',
+        requestId: call.requestId,
+        error: { code: 'ADAPTER_CALL_TIMEOUT', message: `REST API unreachable: ${message}`, retryable: true },
+      });
+    }
+  }
 }
