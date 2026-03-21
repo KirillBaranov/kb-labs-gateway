@@ -206,11 +206,11 @@ function makeHostStore(): { hostStore: IHostStore; hosts: Map<string, HostDescri
     listAll: vi.fn(async () => [...hosts.values()]),
     delete: vi.fn(async (hostId: string, ns: string) => {
       const key = `${hostId}:${ns}`;
-      if (!hosts.has(key)) return false;
+      if (!hosts.has(key)) {return false;}
       hosts.delete(key);
       // Also remove tokens for this host
       for (const [tok, entry] of tokens) {
-        if (entry.hostId === hostId && entry.namespaceId === ns) tokens.delete(tok);
+        if (entry.hostId === hostId && entry.namespaceId === ns) {tokens.delete(tok);}
       }
       return true;
     }),
