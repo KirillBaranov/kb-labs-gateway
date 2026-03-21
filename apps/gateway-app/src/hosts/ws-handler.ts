@@ -265,7 +265,11 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig) {
         }),
       });
 
-      const body = await response.json() as { ok: boolean; result?: unknown; error?: unknown };
+      const body = await response.json() as {
+        ok: boolean;
+        result?: unknown;
+        error?: { code: string; message: string; retryable: boolean; details?: unknown };
+      };
 
       if (body.ok) {
         send(socket, {
