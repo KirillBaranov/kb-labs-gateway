@@ -6,6 +6,19 @@ export const TraceContextSchema = z.object({
   parentId: z.string().optional(),
 });
 
+// Workspace info advertised by host on connect
+export const WorkspaceInfoSchema = z.object({
+  workspaceId: z.string(),
+  repoFingerprint: z.string().optional(),
+  branch: z.string().optional(),
+});
+
+// Plugin inventory advertised by host on connect
+export const PluginInfoSchema = z.object({
+  id: z.string(),
+  version: z.string(),
+});
+
 // Host → Gateway: первое сообщение после подключения
 export const HelloMessageSchema = z.object({
   type: z.literal('hello'),
@@ -13,6 +26,9 @@ export const HelloMessageSchema = z.object({
   agentVersion: z.string(),
   hostId: z.string().optional(), // для reconnect
   capabilities: z.array(z.string()).optional(), // адаптеры которые умеет этот хост
+  hostType: z.enum(['local', 'cloud']).optional(), // Workspace Agent type
+  workspaces: z.array(WorkspaceInfoSchema).optional(), // advertised workspaces
+  plugins: z.array(PluginInfoSchema).optional(), // installed plugins inventory
 });
 
 // Gateway → Host: подтверждение подключения
@@ -180,6 +196,74 @@ export const UnsubscribeMessageSchema = z.object({
   executionId: z.string(),
 });
 
+// ── Adapter reverse proxy schemas (Workspace Agent → Gateway → Platform) ──
+
+/** Serialized error for adapter:error messages */
+export const SerializedErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  retryable: z.boolean(),
+  details: z.unknown().optional(),
+});
+
+/** Adapter call context — propagated from host to platform */
+export const AdapterCallContextSchema = z.object({
+  namespaceId: z.string(),
+  hostId: z.string(),
+  workspaceId: z.string().optional(),
+  environmentId: z.string().optional(),
+  executionRequestId: z.string().optional(),
+});
+
+/** Allowed adapter names for reverse proxy */
+export const AdapterNameSchema = z.enum([
+  'llm',
+  'cache',
+  'vectorStore',
+  'embeddings',
+  'storage',
+  'state',
+]);
+
+// Host → Gateway: вызов platform adapter (reverse proxy)
+export const AdapterCallMessageSchema = z.object({
+  type: z.literal('adapter:call'),
+  requestId: z.string(),
+  adapter: AdapterNameSchema,
+  method: z.string(),
+  args: z.array(z.unknown()),
+  timeout: z.number().positive().optional(),
+  context: AdapterCallContextSchema,
+});
+
+// Gateway → Host: успешный ответ на adapter:call
+export const AdapterResponseMessageSchema = z.object({
+  type: z.literal('adapter:response'),
+  requestId: z.string(),
+  result: z.unknown(),
+});
+
+// Gateway → Host: ошибка при adapter:call
+export const AdapterErrorMessageSchema = z.object({
+  type: z.literal('adapter:error'),
+  requestId: z.string(),
+  error: SerializedErrorSchema,
+});
+
+// Gateway → Host: streaming chunk для adapter:call (Phase 2+)
+export const AdapterChunkMessageSchema = z.object({
+  type: z.literal('adapter:chunk'),
+  requestId: z.string(),
+  data: z.unknown(),
+  index: z.number().int().nonnegative(),
+});
+
+// Host → Gateway: cancel in-flight adapter:call (Phase 2+)
+export const AdapterCancelMessageSchema = z.object({
+  type: z.literal('adapter:cancel'),
+  requestId: z.string(),
+});
+
 // ── Execute request schema (for POST /api/v1/execute) ──
 
 export const ExecuteRequestSchema = z.object({
@@ -214,6 +298,16 @@ export type CancelMessage = z.infer<typeof CancelMessageSchema>;
 export type SubscribeMessage = z.infer<typeof SubscribeMessageSchema>;
 export type UnsubscribeMessage = z.infer<typeof UnsubscribeMessageSchema>;
 export type ExecuteRequest = z.infer<typeof ExecuteRequestSchema>;
+export type WorkspaceInfo = z.infer<typeof WorkspaceInfoSchema>;
+export type PluginInfo = z.infer<typeof PluginInfoSchema>;
+export type SerializedError = z.infer<typeof SerializedErrorSchema>;
+export type AdapterCallContext = z.infer<typeof AdapterCallContextSchema>;
+export type AdapterName = z.infer<typeof AdapterNameSchema>;
+export type AdapterCallMessage = z.infer<typeof AdapterCallMessageSchema>;
+export type AdapterResponseMessage = z.infer<typeof AdapterResponseMessageSchema>;
+export type AdapterErrorMessage = z.infer<typeof AdapterErrorMessageSchema>;
+export type AdapterChunkMessage = z.infer<typeof AdapterChunkMessageSchema>;
+export type AdapterCancelMessage = z.infer<typeof AdapterCancelMessageSchema>;
 
 export type ExecutionEventMessage =
   | ExecutionOutputMessage
@@ -232,7 +326,9 @@ export type InboundMessage =
   | ErrorMessage
   | CancelMessage
   | SubscribeMessage
-  | UnsubscribeMessage;
+  | UnsubscribeMessage
+  | AdapterCallMessage
+  | AdapterCancelMessage;
 
 export type OutboundMessage =
   | ConnectedMessage
@@ -244,4 +340,7 @@ export type OutboundMessage =
   | ExecutionProgressMessage
   | ExecutionArtifactMessage
   | ExecutionErrorEventMessage
-  | ExecutionDoneMessage;
+  | ExecutionDoneMessage
+  | AdapterResponseMessage
+  | AdapterErrorMessage
+  | AdapterChunkMessage;
