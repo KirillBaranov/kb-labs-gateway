@@ -82,6 +82,9 @@ export async function createServer(
 
     // Host registration (public)
     // Use injected registry (with persistence) or fallback to cache-only
+    if (!registry) {
+      logger.warn('No persistent HostRegistry injected — hosts will be lost on restart');
+    }
     const hostRegistry = registry ?? new HostRegistry(cache);
     scope.post('/hosts/register', async (request, reply) => {
       const parsed = HostRegistrationSchema.safeParse(request.body);
@@ -99,28 +102,38 @@ export async function createServer(
     // List hosts (auth required)
     scope.get('/hosts', async (request, reply) => {
       const auth = request.authContext;
-      if (!auth) return reply.code(401).send({ error: 'Unauthorized' });
+      if (!auth) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
       const hosts = await hostRegistry.list(auth.namespaceId);
       return { hosts };
     });
 
     // Get host by ID (auth required)
-    scope.get('/hosts/:hostId', async (request, reply) => {
+    scope.get<{ Params: { hostId: string } }>('/hosts/:hostId', async (request, reply) => {
       const auth = request.authContext;
-      if (!auth) return reply.code(401).send({ error: 'Unauthorized' });
-      const { hostId } = request.params as { hostId: string };
+      if (!auth) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+      const { hostId } = request.params;
       const host = await hostRegistry.get(hostId, auth.namespaceId);
-      if (!host) return reply.code(404).send({ error: 'Host not found' });
+      if (!host) {
+        return reply.code(404).send({ error: 'Host not found' });
+      }
       return host;
     });
 
     // Deregister host (auth required)
-    scope.delete('/hosts/:hostId', async (request, reply) => {
+    scope.delete<{ Params: { hostId: string } }>('/hosts/:hostId', async (request, reply) => {
       const auth = request.authContext;
-      if (!auth) return reply.code(401).send({ error: 'Unauthorized' });
-      const { hostId } = request.params as { hostId: string };
+      if (!auth) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
+      const { hostId } = request.params;
       const deleted = await hostRegistry.deregister(hostId, auth.namespaceId);
-      if (!deleted) return reply.code(404).send({ error: 'Host not found' });
+      if (!deleted) {
+        return reply.code(404).send({ error: 'Host not found' });
+      }
       return reply.code(204).send();
     });
 
