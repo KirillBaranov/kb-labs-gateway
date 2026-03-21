@@ -27,7 +27,7 @@ export class HostRegistry {
    * All restored hosts start as offline — live status comes from WS connections.
    */
   async restore(): Promise<number> {
-    if (!this.store) return 0;
+    if (!this.store) {return 0;}
     const hosts = await this.store.listAll();
     for (const host of hosts) {
       const cacheKey = this.hostKey(host.namespaceId, host.hostId);
@@ -71,7 +71,7 @@ export class HostRegistry {
 
   async setOnline(hostId: string, namespaceId: string, connectionId: string): Promise<void> {
     const host = await this.getFromCache(hostId, namespaceId);
-    if (!host) return;
+    if (!host) {return;}
     await this.cache.set(this.hostKey(namespaceId, hostId), {
       ...host,
       status: 'online',
@@ -82,7 +82,7 @@ export class HostRegistry {
 
   async setOffline(hostId: string, namespaceId: string, connectionId: string): Promise<void> {
     const host = await this.getFromCache(hostId, namespaceId);
-    if (!host) return;
+    if (!host) {return;}
     const connections = host.connections.filter((c) => c !== connectionId);
     const status = connections.length > 0 ? 'online' : 'offline';
     await this.cache.set(this.hostKey(namespaceId, hostId), {
@@ -95,19 +95,19 @@ export class HostRegistry {
 
   async heartbeat(hostId: string, namespaceId: string): Promise<void> {
     const host = await this.getFromCache(hostId, namespaceId);
-    if (!host) return;
+    if (!host) {return;}
     await this.cache.set(this.hostKey(namespaceId, hostId), { ...host, lastSeen: Date.now() });
   }
 
   async get(hostId: string, namespaceId: string): Promise<HostDescriptor | null> {
     // Try cache first (hot)
     const cached = await this.cache.get<HostDescriptor>(this.hostKey(namespaceId, hostId));
-    if (cached) return cached;
+    if (cached) {return cached;}
 
     // Fall through to store (cold)
-    if (!this.store) return null;
+    if (!this.store) {return null;}
     const stored = await this.store.get(hostId, namespaceId);
-    if (!stored) return null;
+    if (!stored) {return null;}
 
     // Warm cache
     await this.cache.set(this.hostKey(namespaceId, hostId), { ...stored, status: 'offline', connections: [] });
@@ -118,12 +118,12 @@ export class HostRegistry {
   async resolveToken(token: string): Promise<{ hostId: string; namespaceId: string } | null> {
     // Try cache first
     const cached = await this.cache.get<{ hostId: string; namespaceId: string }>(this.tokenKey(token));
-    if (cached) return cached;
+    if (cached) {return cached;}
 
     // Fall through to store
-    if (!this.store) return null;
+    if (!this.store) {return null;}
     const stored = await this.store.resolveToken(token);
-    if (!stored) return null;
+    if (!stored) {return null;}
 
     // Warm cache
     await this.cache.set(this.tokenKey(token), stored);
@@ -173,7 +173,7 @@ export class HostRegistry {
     if (existing) {
       if (capabilities.length > 0 && JSON.stringify(existing.capabilities) !== JSON.stringify(capabilities)) {
         const updated = { ...existing, capabilities, updatedAt: Date.now() };
-        if (this.store) await this.store.save(updated);
+        if (this.store) {await this.store.save(updated);}
         await this.cache.set(this.hostKey(namespaceId, hostId), updated);
       }
       return;
@@ -192,7 +192,7 @@ export class HostRegistry {
       updatedAt: now,
     };
 
-    if (this.store) await this.store.save(descriptor);
+    if (this.store) {await this.store.save(descriptor);}
     await this.cache.set(this.hostKey(namespaceId, hostId), descriptor);
     await this.addToIndex(namespaceId, hostId);
   }

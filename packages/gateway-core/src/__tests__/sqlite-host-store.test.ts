@@ -16,8 +16,8 @@ function createInMemoryDb(): ISQLDatabase {
       ddlExecuted.push(sql);
       // Parse CREATE TABLE to track table names
       const match = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/i);
-      if (match && !tables.has(match[1])) {
-        tables.set(match[1], new Map());
+      if (match && !tables.has(match[1]!)) {
+        tables.set(match[1]!, new Map());
       }
     },
 
@@ -27,8 +27,8 @@ function createInMemoryDb(): ISQLDatabase {
       // CREATE TABLE (fallback if exec not used)
       if (trimmed.startsWith('CREATE TABLE')) {
         const match = sql.match(/CREATE TABLE IF NOT EXISTS (\w+)/i);
-        if (match && !tables.has(match[1])) {
-          tables.set(match[1], new Map());
+        if (match && !tables.has(match[1]!)) {
+          tables.set(match[1]!, new Map());
         }
         return { rows: [], rowCount: 0 };
       }
@@ -36,15 +36,15 @@ function createInMemoryDb(): ISQLDatabase {
       // INSERT ... ON CONFLICT DO UPDATE
       if (trimmed.startsWith('INSERT INTO')) {
         const tableMatch = sql.match(/INSERT INTO (\w+)/i);
-        if (!tableMatch) return { rows: [], rowCount: 0 };
-        const tableName = tableMatch[1];
+        if (!tableMatch) {return { rows: [], rowCount: 0 };}
+        const tableName = tableMatch[1]!;
         const table = tables.get(tableName);
-        if (!table) return { rows: [], rowCount: 0 };
+        if (!table) {return { rows: [], rowCount: 0 };}
 
         // Extract column names
         const colMatch = sql.match(/\(([^)]+)\)\s*VALUES/i);
-        if (!colMatch) return { rows: [], rowCount: 0 };
-        const columns = colMatch[1].split(',').map(c => c.trim());
+        if (!colMatch) {return { rows: [], rowCount: 0 };}
+        const columns = colMatch[1]!.split(',').map(c => c.trim());
 
         const row: Record<string, unknown> = {};
         columns.forEach((col, i) => {
@@ -68,7 +68,7 @@ function createInMemoryDb(): ISQLDatabase {
           const merged = { ...existing };
           for (const col of columns) {
             // Don't update created_at on conflict
-            if (col === 'created_at' && existing[col]) continue;
+            if (col === 'created_at' && existing[col]) {continue;}
             merged[col] = row[col];
           }
           table.set(key, merged);
@@ -82,9 +82,9 @@ function createInMemoryDb(): ISQLDatabase {
       // SELECT
       if (trimmed.startsWith('SELECT')) {
         const tableMatch = sql.match(/FROM (\w+)/i);
-        if (!tableMatch) return { rows: [], rowCount: 0 };
-        const table = tables.get(tableMatch[1]);
-        if (!table) return { rows: [] as T[], rowCount: 0 };
+        if (!tableMatch) {return { rows: [], rowCount: 0 };}
+        const table = tables.get(tableMatch[1]!);
+        if (!table) {return { rows: [] as T[], rowCount: 0 };}
 
         let rows = Array.from(table.values());
 
@@ -92,7 +92,7 @@ function createInMemoryDb(): ISQLDatabase {
         if (sql.includes('WHERE')) {
           const conditions = sql.match(/WHERE\s+(.+?)(?:\s+ORDER|\s*$)/is);
           if (conditions) {
-            const whereClause = conditions[1];
+            const whereClause = conditions[1]!;
             const paramsCopy = [...(params ?? [])];
 
             // Parse AND-separated conditions
@@ -100,7 +100,7 @@ function createInMemoryDb(): ISQLDatabase {
             for (const part of parts) {
               const condMatch = part.match(/(\w+)\s*=\s*\?/);
               if (condMatch) {
-                const col = condMatch[1];
+                const col = condMatch[1]!;
                 const val = paramsCopy.shift();
                 rows = rows.filter(r => r[col] === val);
               }
@@ -114,9 +114,9 @@ function createInMemoryDb(): ISQLDatabase {
       // DELETE
       if (trimmed.startsWith('DELETE')) {
         const tableMatch = sql.match(/FROM (\w+)/i);
-        if (!tableMatch) return { rows: [], rowCount: 0 };
-        const table = tables.get(tableMatch[1]);
-        if (!table) return { rows: [], rowCount: 0 };
+        if (!tableMatch) {return { rows: [], rowCount: 0 };}
+        const table = tables.get(tableMatch[1]!);
+        if (!table) {return { rows: [], rowCount: 0 };}
 
         let count = 0;
 
@@ -124,12 +124,12 @@ function createInMemoryDb(): ISQLDatabase {
           const paramsCopy = [...(params ?? [])];
           const conditions = sql.match(/WHERE\s+(.+)/is);
           if (conditions) {
-            const parts = conditions[1].split(/\s+AND\s+/i);
+            const parts = conditions[1]!.split(/\s+AND\s+/i);
             const filters: Array<{ col: string; val: unknown }> = [];
             for (const part of parts) {
               const condMatch = part.match(/(\w+)\s*=\s*\?/);
               if (condMatch) {
-                filters.push({ col: condMatch[1], val: paramsCopy.shift() });
+                filters.push({ col: condMatch[1]!, val: paramsCopy.shift() });
               }
             }
 
