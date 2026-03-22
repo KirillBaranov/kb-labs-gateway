@@ -33,16 +33,45 @@ export class HostRegistry {
   /**
    * Restore hosts from persistent store into cache on startup.
    * All restored hosts start as offline — live status comes from WS connections.
+   *
+   * Also resets any stale online/reconnecting hosts in cache to offline,
+   * since no WebSocket connections survive a Gateway restart.
    */
   async restore(): Promise<number> {
+    // 1. Reset stale hosts in cache (covers Redis cache surviving restarts)
+    await this.resetStaleHosts();
+
+    // 2. Restore from store if available
     if (!this.store) {return 0;}
     const hosts = await this.store.listAll();
     for (const host of hosts) {
+      const offline = { ...host, status: 'offline' as const, connections: [] as string[] };
       const cacheKey = this.hostKey(host.namespaceId, host.hostId);
-      await this.cache.set(cacheKey, { ...host, status: 'offline', connections: [] });
+      await this.cache.set(cacheKey, offline);
+      await this.store.save(offline);
       await this.addToIndex(host.namespaceId, host.hostId);
     }
     return hosts.length;
+  }
+
+  /**
+   * Reset all hosts in cache to offline.
+   * Called on startup — no WS connections exist yet, so nothing should be online.
+   * Uses namespace index maintained in cache to discover all namespaces.
+   */
+  private async resetStaleHosts(): Promise<void> {
+    const namespaces = await this.cache.get<string[]>('host:namespaces') ?? ['default'];
+    for (const ns of namespaces) {
+      const hostIds = await this.cache.get<string[]>(`host:index:${ns}`) ?? [];
+      for (const hostId of hostIds) {
+        const host = await this.cache.get<HostDescriptor>(this.hostKey(ns, hostId));
+        if (host && (host.status === 'online' || host.status === 'reconnecting')) {
+          await this.cache.set(this.hostKey(ns, hostId), {
+            ...host, status: 'offline', connections: [],
+          });
+        }
+      }
+    }
   }
 
   async register(reg: HostRegistration): Promise<HostRegisterResult> {
@@ -89,12 +118,14 @@ export class HostRegistry {
       this.graceTimers.delete(graceKey);
     }
 
-    await this.cache.set(this.hostKey(namespaceId, hostId), {
+    const updated = {
       ...host,
-      status: 'online',
+      status: 'online' as const,
       lastSeen: Date.now(),
       connections: [connectionId],
-    });
+    };
+    await this.cache.set(this.hostKey(namespaceId, hostId), updated);
+    if (this.store) {await this.store.save(updated);}
   }
 
   async setOffline(hostId: string, namespaceId: string, connectionId: string): Promise<void> {
@@ -111,9 +142,11 @@ export class HostRegistry {
     }
 
     // Last connection gone — enter grace period (reconnecting)
-    await this.cache.set(this.hostKey(namespaceId, hostId), {
-      ...host, status: 'reconnecting', lastSeen: Date.now(), connections: [],
-    });
+    const reconnecting = {
+      ...host, status: 'reconnecting' as const, lastSeen: Date.now(), connections: [] as string[],
+    };
+    await this.cache.set(this.hostKey(namespaceId, hostId), reconnecting);
+    if (this.store) {await this.store.save(reconnecting);}
 
     // Cancel any existing grace timer for this host
     const graceKey = `${namespaceId}:${hostId}`;
@@ -125,9 +158,9 @@ export class HostRegistry {
       this.graceTimers.delete(graceKey);
       const current = await this.getFromCache(hostId, namespaceId);
       if (current?.status === 'reconnecting') {
-        await this.cache.set(this.hostKey(namespaceId, hostId), {
-          ...current, status: 'offline', lastSeen: Date.now(),
-        });
+        const offline = { ...current, status: 'offline' as const, lastSeen: Date.now() };
+        await this.cache.set(this.hostKey(namespaceId, hostId), offline);
+        if (this.store) {await this.store.save(offline);}
       }
     }, this.reconnectGraceMs));
   }
@@ -255,6 +288,12 @@ export class HostRegistry {
     const hostIds = (await this.cache.get<string[]>(indexKey)) ?? [];
     if (!hostIds.includes(hostId)) {
       await this.cache.set(indexKey, [...hostIds, hostId]);
+    }
+    // Track namespace for resetStaleHosts()
+    const nsKey = 'host:namespaces';
+    const namespaces = (await this.cache.get<string[]>(nsKey)) ?? [];
+    if (!namespaces.includes(namespaceId)) {
+      await this.cache.set(nsKey, [...namespaces, namespaceId]);
     }
   }
 

@@ -29,8 +29,8 @@ function send(ws: WebSocket, msg: OutboundMessage): void {
   ws.send(JSON.stringify(msg));
 }
 
-export function createWsHandler(cache: ICache, jwtConfig: JwtConfig) {
-  const registry = new HostRegistry(cache);
+export function createWsHandler(cache: ICache, jwtConfig: JwtConfig, hostRegistry?: HostRegistry) {
+  const registry = hostRegistry ?? new HostRegistry(cache);
   const buffer = new AdaptiveBuffer(cache);
 
   return async function wsHandler(

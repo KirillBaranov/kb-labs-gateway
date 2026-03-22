@@ -235,7 +235,7 @@ export async function createServer(
   // that dispatches gateway WS paths to raw ws handlers and delegates
   // everything else (upstream WS proxy) to http-proxy.
   await app.ready();
-  attachGatewayWs(app.server, cache, jwtConfig, logger);
+  attachGatewayWs(app.server, cache, jwtConfig, logger, registry);
 
   return app;
 }
