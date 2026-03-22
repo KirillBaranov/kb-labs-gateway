@@ -211,9 +211,9 @@ export async function createServer(
       let hostId: string | undefined;
 
       if (strategy === 'pinned' && target.hostId) {
-        // Verify host exists and is online
+        // Verify host exists and is reachable (online or reconnecting)
         const host = await hostRegistry.get(target.hostId, namespaceId);
-        if (host?.status === 'online') {
+        if (host?.status === 'online' || host?.status === 'reconnecting') {
           hostId = target.hostId;
         }
       } else {

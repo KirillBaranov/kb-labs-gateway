@@ -16,11 +16,19 @@ export interface HostRegisterResult {
  * Write path: store.save() + cache.set()
  * Read path: cache.get() ?? store.get() → cache warm
  */
+const DEFAULT_RECONNECT_GRACE_MS = 10_000;
+
 export class HostRegistry {
+  private readonly graceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly reconnectGraceMs: number;
+
   constructor(
     private readonly cache: ICache,
     private readonly store?: IHostStore,
-  ) {}
+    options?: { reconnectGraceMs?: number },
+  ) {
+    this.reconnectGraceMs = options?.reconnectGraceMs ?? DEFAULT_RECONNECT_GRACE_MS;
+  }
 
   /**
    * Restore hosts from persistent store into cache on startup.
@@ -72,6 +80,15 @@ export class HostRegistry {
   async setOnline(hostId: string, namespaceId: string, connectionId: string): Promise<void> {
     const host = await this.getFromCache(hostId, namespaceId);
     if (!host) {return;}
+
+    // Cancel grace timer if reconnecting
+    const graceKey = `${namespaceId}:${hostId}`;
+    const graceTimer = this.graceTimers.get(graceKey);
+    if (graceTimer) {
+      clearTimeout(graceTimer);
+      this.graceTimers.delete(graceKey);
+    }
+
     await this.cache.set(this.hostKey(namespaceId, hostId), {
       ...host,
       status: 'online',
@@ -84,13 +101,35 @@ export class HostRegistry {
     const host = await this.getFromCache(hostId, namespaceId);
     if (!host) {return;}
     const connections = host.connections.filter((c) => c !== connectionId);
-    const status = connections.length > 0 ? 'online' : 'offline';
+
+    if (connections.length > 0) {
+      // Other connections still active — stay online
+      await this.cache.set(this.hostKey(namespaceId, hostId), {
+        ...host, status: 'online', lastSeen: Date.now(), connections,
+      });
+      return;
+    }
+
+    // Last connection gone — enter grace period (reconnecting)
     await this.cache.set(this.hostKey(namespaceId, hostId), {
-      ...host,
-      status,
-      lastSeen: Date.now(),
-      connections,
+      ...host, status: 'reconnecting', lastSeen: Date.now(), connections: [],
     });
+
+    // Cancel any existing grace timer for this host
+    const graceKey = `${namespaceId}:${hostId}`;
+    const existing = this.graceTimers.get(graceKey);
+    if (existing) {clearTimeout(existing);}
+
+    // After grace period, mark truly offline
+    this.graceTimers.set(graceKey, setTimeout(async () => {
+      this.graceTimers.delete(graceKey);
+      const current = await this.getFromCache(hostId, namespaceId);
+      if (current?.status === 'reconnecting') {
+        await this.cache.set(this.hostKey(namespaceId, hostId), {
+          ...current, status: 'offline', lastSeen: Date.now(),
+        });
+      }
+    }, this.reconnectGraceMs));
   }
 
   async heartbeat(hostId: string, namespaceId: string): Promise<void> {

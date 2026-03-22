@@ -109,11 +109,11 @@ describe('HostRegistry.setOnline / setOffline', () => {
     expect(host.status).toBe('online');
   });
 
-  it('sets offline when last connection removed', async () => {
+  it('enters reconnecting status when last connection removed (grace period)', async () => {
     await registry.setOnline(hostId, 'ns-1', 'conn-a');
     await registry.setOffline(hostId, 'ns-1', 'conn-a');
     const host = store.get(`host:registry:ns-1:${hostId}`) as HostDescriptor;
-    expect(host.status).toBe('offline');
+    expect(host.status).toBe('reconnecting');
     expect(host.connections).toHaveLength(0);
   });
 
@@ -466,5 +466,81 @@ describe('HostRegistry with IHostStore (dual-layer)', () => {
       expect(hosts.get('h1:ns')!.capabilities).toEqual(['filesystem', 'git']);
       expect(hostStore.save).toHaveBeenCalledTimes(2);
     });
+  });
+});
+
+describe('HostRegistry grace period', () => {
+  it('sets status to reconnecting on last connection close', async () => {
+    const { cache, store: cacheMap } = makeCache();
+    const registry = new HostRegistry(cache, undefined, { reconnectGraceMs: 100 });
+
+    const { descriptor } = await registry.register({
+      name: 'grace-host', namespaceId: 'ns', capabilities: [], workspacePaths: [],
+    });
+    await registry.setOnline(descriptor.hostId, 'ns', 'conn-1');
+    await registry.setOffline(descriptor.hostId, 'ns', 'conn-1');
+
+    const host = cacheMap.get(`host:registry:ns:${descriptor.hostId}`) as HostDescriptor;
+    expect(host.status).toBe('reconnecting');
+  });
+
+  it('cancels grace timer when host reconnects before expiry', async () => {
+    const { cache, store: cacheMap } = makeCache();
+    const registry = new HostRegistry(cache, undefined, { reconnectGraceMs: 200 });
+
+    const { descriptor } = await registry.register({
+      name: 'grace-host', namespaceId: 'ns', capabilities: [], workspacePaths: [],
+    });
+    await registry.setOnline(descriptor.hostId, 'ns', 'conn-1');
+    await registry.setOffline(descriptor.hostId, 'ns', 'conn-1');
+
+    // Reconnect before grace expires
+    await registry.setOnline(descriptor.hostId, 'ns', 'conn-2');
+
+    const host = cacheMap.get(`host:registry:ns:${descriptor.hostId}`) as HostDescriptor;
+    expect(host.status).toBe('online');
+    expect(host.connections).toEqual(['conn-2']);
+
+    // Wait past grace — should still be online (timer was cancelled)
+    await new Promise(r => { setTimeout(r, 250); });
+    const after = cacheMap.get(`host:registry:ns:${descriptor.hostId}`) as HostDescriptor;
+    expect(after.status).toBe('online');
+  });
+
+  it('transitions to offline after grace period expires', async () => {
+    const { cache, store: cacheMap } = makeCache();
+    const registry = new HostRegistry(cache, undefined, { reconnectGraceMs: 50 });
+
+    const { descriptor } = await registry.register({
+      name: 'grace-host', namespaceId: 'ns', capabilities: [], workspacePaths: [],
+    });
+    await registry.setOnline(descriptor.hostId, 'ns', 'conn-1');
+    await registry.setOffline(descriptor.hostId, 'ns', 'conn-1');
+
+    // Wait for grace to expire
+    await new Promise(r => { setTimeout(r, 100); });
+
+    const host = cacheMap.get(`host:registry:ns:${descriptor.hostId}`) as HostDescriptor;
+    expect(host.status).toBe('offline');
+  });
+
+  it('stays online when other connections remain', async () => {
+    const { cache, store: cacheMap } = makeCache();
+    const registry = new HostRegistry(cache, undefined, { reconnectGraceMs: 100 });
+
+    const { descriptor } = await registry.register({
+      name: 'multi-conn', namespaceId: 'ns', capabilities: [], workspacePaths: [],
+    });
+    await registry.setOnline(descriptor.hostId, 'ns', 'conn-1');
+    // setOnline replaces connections, so simulate by directly setting
+    const key = `host:registry:ns:${descriptor.hostId}`;
+    const h = cacheMap.get(key) as HostDescriptor;
+    cacheMap.set(key, { ...h, connections: ['conn-1', 'conn-2'] });
+
+    await registry.setOffline(descriptor.hostId, 'ns', 'conn-1');
+
+    const host = cacheMap.get(key) as HostDescriptor;
+    expect(host.status).toBe('online');
+    expect(host.connections).toEqual(['conn-2']);
   });
 });

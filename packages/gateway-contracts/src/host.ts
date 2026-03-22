@@ -13,12 +13,14 @@ export const HostRegistrationSchema = z.object({
   hostType: HostTypeSchema.optional(),
 });
 
+export const HostStatusSchema = z.enum(['online', 'offline', 'degraded', 'reconnecting']);
+
 export const HostDescriptorSchema = z.object({
   hostId: z.string(),
   name: z.string(),
   namespaceId: z.string(),
   capabilities: z.array(HostCapabilitySchema),
-  status: z.enum(['online', 'offline', 'degraded']),
+  status: HostStatusSchema,
   lastSeen: z.number(),
   connections: z.array(z.string()),
   // Workspace Agent metadata (populated from hello message)
@@ -33,9 +35,10 @@ export const HostDescriptorSchema = z.object({
 export const HostRegisterResponseSchema = z.object({
   hostId: z.string(),
   machineToken: z.string(),
-  status: z.enum(['online', 'offline', 'degraded']),
+  status: HostStatusSchema,
 });
 
+export type HostStatus = z.infer<typeof HostStatusSchema>;
 export type HostCapability = z.infer<typeof HostCapabilitySchema>;
 export type HostType = z.infer<typeof HostTypeSchema>;
 export type HostRegistration = z.infer<typeof HostRegistrationSchema>;
