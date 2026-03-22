@@ -129,4 +129,22 @@ describe('GatewayHostResolver', () => {
 
     expect(mockFetch.mock.calls[0]![0]).toBe('http://localhost:4000/internal/resolve-host');
   });
+
+  it('throws on empty internalSecret', () => {
+    expect(() => makeResolver({ internalSecret: '' })).toThrow('internalSecret is required');
+  });
+
+  it('returns null and logs on invalid response body', async () => {
+    const warn = vi.fn();
+    const resolver = new GatewayHostResolver({
+      gatewayUrl: 'http://localhost:4000',
+      internalSecret: 'test-secret',
+      logger: { warn },
+    });
+    mockFetch.mockResolvedValueOnce(jsonResponse(200, { noHostId: true }));
+
+    const result = await resolver.resolve({ type: 'workspace-agent' });
+    expect(result).toBeNull();
+    expect(warn).toHaveBeenCalledOnce();
+  });
 });
