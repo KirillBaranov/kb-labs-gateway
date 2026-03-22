@@ -14,6 +14,7 @@ const PUBLIC_ROUTES = new Set([
   '/auth/token',
   '/auth/refresh',
   '/internal/dispatch', // has its own x-internal-secret auth
+  '/internal/resolve-host', // has its own x-internal-secret auth
 ]);
 
 declare module 'fastify' {
