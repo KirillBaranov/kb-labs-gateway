@@ -26,17 +26,17 @@
     "test:watch": "vitest -c ../../vitest.config.ts"
   },
   "dependencies": {
-    "@kb-labs/core-contracts": "workspace:*",
+    "@kb-labs/core-contracts": "link:../../../../platform/kb-labs-core/packages/core-contracts",
     "@kb-labs/gateway-contracts": "workspace:*"
   },
   "devDependencies": {
-    "@kb-labs/devkit": "workspace:*",
+    "@kb-labs/devkit": "link:../../../kb-labs-devkit",
     "@types/node": "^20",
     "tsup": "^8.5.0",
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "@kb-labs/core-platform": "workspace:*"
+    "@kb-labs/core-platform": "link:../../../../platform/kb-labs-core/packages/core-platform"
   },
   "peerDependenciesMeta": {
     "@kb-labs/core-platform": {
