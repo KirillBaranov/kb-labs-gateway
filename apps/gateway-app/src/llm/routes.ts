@@ -35,7 +35,7 @@ function isLLMRouter(llm: ILLM): llm is ILLM & ILLMRouter {
  */
 async function resolveLLMForTier(tier: LLMTier): Promise<ILLM | undefined> {
   const llm = platform.llm;
-  if (!llm) return undefined;
+  if (!llm) {return undefined;}
 
   if (isLLMRouter(llm)) {
     const binding = await llm.resolveAdapter({ tier });
@@ -103,8 +103,8 @@ export function registerLLMGatewayRoutes(app: FastifyInstance, logger: ILogger):
       }
       return await handleCompletionRequest(reply, llm, req, requestId);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      logger.error('AI Gateway error', { requestId, error: message, tier: req.model });
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error('AI Gateway error', error, { requestId, tier: req.model });
       return reply.code(500).send({
         error: {
           message: 'Internal server error',
@@ -290,11 +290,11 @@ async function handleStreamingRequest(
 
     writeDone();
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    logger.error('AI Gateway stream error', { requestId, error: message });
+    const error = err instanceof Error ? err : new Error(String(err));
+    logger.error('AI Gateway stream error', error, { requestId });
     if (!reply.raw.writableEnded) {
       reply.raw.write(
-        `data: ${JSON.stringify({ error: { message, type: 'server_error' } })}\n\n`,
+        `data: ${JSON.stringify({ error: { message: error.message, type: 'server_error' } })}\n\n`,
       );
       reply.raw.end();
     }
@@ -308,7 +308,7 @@ async function handleStreamingRequest(
 function toILLMMessages(req: ChatCompletionRequest): LLMMessage[] {
   return req.messages.map((m) => {
     const msg: LLMMessage = { role: m.role, content: m.content };
-    if (m.tool_call_id) msg.toolCallId = m.tool_call_id;
+    if (m.tool_call_id) {msg.toolCallId = m.tool_call_id;}
     if (m.tool_calls) {
       msg.toolCalls = m.tool_calls.map((tc) => ({
         id: tc.id,
@@ -329,7 +329,7 @@ function toILLMTools(tools: NonNullable<ChatCompletionRequest['tools']>): LLMToo
 }
 
 function normalizeStop(stop: string | string[] | undefined): string[] | undefined {
-  if (!stop) return undefined;
+  if (!stop) {return undefined;}
   return Array.isArray(stop) ? stop : [stop];
 }
 

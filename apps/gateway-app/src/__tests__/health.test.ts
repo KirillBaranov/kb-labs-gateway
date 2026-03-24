@@ -10,8 +10,7 @@
  *     - adapter latency reported
  *     - upstream health probing
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import Fastify, { type FastifyInstance } from 'fastify';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { ICache, ILogger } from '@kb-labs/core-platform';
 import type { JwtConfig } from '@kb-labs/gateway-auth';
 import type { GatewayConfig } from '@kb-labs/gateway-contracts';
@@ -59,7 +58,7 @@ const stubJwtConfig: JwtConfig = { secret: 'test-secret' };
 
 async function buildHealthApp(
   config: Partial<GatewayConfig> = {},
-): Promise<FastifyInstance> {
+) {
   // Dynamically import createServer — it uses the mocked platform
   const { createServer } = await import('../server.js');
 
@@ -71,17 +70,16 @@ async function buildHealthApp(
   };
 
   const cache = makeCache();
-  const app = await createServer(fullConfig, cache, noopLogger, stubJwtConfig);
-  return app;
+  return createServer(fullConfig, cache, noopLogger, stubJwtConfig);
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 describe('Gateway /health endpoint', () => {
-  let app: FastifyInstance;
+  let app: Awaited<ReturnType<typeof buildHealthApp>>;
 
   afterEach(async () => {
-    if (app) await app.close();
+    if (app) {await app.close();}
     vi.clearAllMocks();
   });
 

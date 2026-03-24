@@ -5,7 +5,7 @@ const isDockerBuild = process.env.DOCKER_BUILD === '1';
 
 export default defineConfig({
   ...nodePreset,
-  dts: false, // runtime binary, not a library
+  dts: true,
   tsconfig: 'tsconfig.build.json',
   entry: ['src/index.ts', 'src/cli.ts'],
   // When building for Docker: bundle all deps into a single CJS file

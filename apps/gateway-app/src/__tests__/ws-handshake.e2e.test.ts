@@ -270,10 +270,11 @@ describe('WebSocket: host status lifecycle', () => {
 
     ws.close(1000);
 
-    // Give server time to process close
+    // Give server time to process close — status transitions to 'reconnecting' first,
+    // then to 'offline' after the reconnect grace period
     await new Promise((r) => { setTimeout(r, 100); });
 
     const hostAfter = await cache.get<{ status: string }>(`host:registry:ns-e2e:${hostId}`);
-    expect(hostAfter!.status).toBe('offline');
+    expect(['reconnecting', 'offline']).toContain(hostAfter!.status);
   }, 8000);
 });

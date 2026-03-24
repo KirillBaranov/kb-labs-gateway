@@ -287,7 +287,7 @@ describe('POST /llm/v1/chat/completions', () => {
     const chunks = ['Hello', ', ', 'world', '!'];
     (mockLLM.stream as any).mockReturnValue(
       (async function* () {
-        for (const c of chunks) yield c;
+        for (const c of chunks) {yield c;}
       })(),
     );
 
@@ -306,7 +306,7 @@ describe('POST /llm/v1/chat/completions', () => {
     const events = lines.map((l) => l.replace('data: ', ''));
 
     // First event: role chunk
-    const first = JSON.parse(events[0]);
+    const first = JSON.parse(events[0]!);
     expect(first.object).toBe('chat.completion.chunk');
     expect(first.choices[0].delta.role).toBe('assistant');
 
@@ -318,7 +318,7 @@ describe('POST /llm/v1/chat/completions', () => {
     expect(streamedText).toBe('Hello, world!');
 
     // Last JSON event: finish chunk
-    const finish = JSON.parse(events[events.length - 2]);
+    const finish = JSON.parse(events[events.length - 2]!);
     expect(finish.choices[0].finish_reason).toBe('stop');
 
     // Final: [DONE] sentinel

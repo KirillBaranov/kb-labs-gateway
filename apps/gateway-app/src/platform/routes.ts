@@ -176,16 +176,15 @@ export function registerPlatformRoutes(app: FastifyInstance, logger: ILogger): v
         } satisfies PlatformCallResponse);
       } catch (err) {
         const durationMs = Date.now() - startTime;
-        const message = err instanceof Error ? err.message : String(err);
-        logger.error('Platform API error', {
+        const error = err instanceof Error ? err : new Error(String(err));
+        logger.error('Platform API error', error, {
           adapter: adapterName,
           method: methodName,
-          error: message,
           tenantId: auth.namespaceId,
         });
         return reply.code(502).send({
           ok: false,
-          error: { message, code: 'ADAPTER_ERROR' },
+          error: { message: error.message, code: 'ADAPTER_ERROR' },
           durationMs,
         } satisfies PlatformCallResponse);
       }
