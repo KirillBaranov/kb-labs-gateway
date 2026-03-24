@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
 import fastifyHttpProxy from '@fastify/http-proxy';
+import { platform } from '@kb-labs/core-runtime';
 import type { ICache, ILogger } from '@kb-labs/core-platform';
 import type { GatewayConfig } from '@kb-labs/gateway-contracts';
 import { HostRegistrationSchema } from '@kb-labs/gateway-contracts';
@@ -8,6 +9,9 @@ import { AuthService, type JwtConfig } from '@kb-labs/gateway-auth';
 import { createAuthMiddleware } from './auth/middleware.js';
 import { registerAuthRoutes } from './auth/routes.js';
 import { registerExecuteRoutes } from './execute/routes.js';
+import { registerLLMGatewayRoutes } from './llm/routes.js';
+import { registerTelemetryRoutes } from './telemetry/routes.js';
+import { registerPlatformRoutes } from './platform/routes.js';
 import { HostRegistry } from './hosts/registry.js';
 import { globalDispatcher } from './hosts/dispatcher.js';
 import { attachGatewayWs } from './ws/gateway-ws.js';
@@ -77,8 +81,66 @@ export async function createServer(
     const authService = new AuthService(cache, jwtConfig);
     registerAuthRoutes(scope as unknown as Parameters<typeof registerAuthRoutes>[0], authService);
 
-    // Health (public)
-    scope.get('/health', async () => ({ status: 'ok', version: '1.0' }));
+    // Health (public) — comprehensive adapter + upstream health
+    const HEALTH_CACHE_KEY = '__gateway_health';
+    const HEALTH_CACHE_TTL = 15_000; // 15s cache to prevent health DDoS
+    const startupTime = Date.now();
+
+    scope.get('/health', async () => {
+      // Try to return cached health response
+      try {
+        const cached = await cache.get<Record<string, unknown>>(HEALTH_CACHE_KEY);
+        if (cached) return cached;
+      } catch { /* cache miss or error, compute fresh */ }
+
+      const adapterNames = ['llm', 'cache', 'analytics', 'vectorStore', 'embeddings'] as const;
+      const adapters: Record<string, { available: boolean; latencyMs?: number }> = {};
+
+      for (const name of adapterNames) {
+        const probeStart = Date.now();
+        try {
+          const adapter = (platform as any)[name];
+          adapters[name] = { available: !!adapter, latencyMs: Date.now() - probeStart };
+        } catch {
+          adapters[name] = { available: false, latencyMs: Date.now() - probeStart };
+        }
+      }
+
+      // Probe upstreams (HTTP GET /health with 2s timeout)
+      const upstreams: Record<string, { status: string; latencyMs?: number }> = {};
+      for (const [name, upstream] of Object.entries(config.upstreams)) {
+        const probeStart = Date.now();
+        try {
+          const res = await fetch(`${upstream.url}/health`, {
+            signal: AbortSignal.timeout(2000),
+          });
+          upstreams[name] = { status: res.ok ? 'up' : 'down', latencyMs: Date.now() - probeStart };
+        } catch {
+          upstreams[name] = { status: 'down', latencyMs: Date.now() - probeStart };
+        }
+      }
+
+      // Derive overall status: LLM is critical
+      const llmOk = adapters.llm?.available ?? false;
+      const allOk = Object.values(adapters).every((a) => a.available);
+      const status = llmOk ? (allOk ? 'healthy' : 'degraded') : 'unhealthy';
+
+      const response = {
+        status,
+        version: '1.0',
+        uptime: Math.floor((Date.now() - startupTime) / 1000),
+        timestamp: new Date().toISOString(),
+        adapters,
+        upstreams,
+      };
+
+      // Cache for 15 seconds
+      try {
+        await cache.set(HEALTH_CACHE_KEY, response, HEALTH_CACHE_TTL);
+      } catch { /* cache write failure is non-critical */ }
+
+      return response;
+    });
 
     // Host registration (public)
     // Use injected registry (with persistence) or fallback to cache-only
@@ -139,6 +201,15 @@ export async function createServer(
 
     // Execute endpoint — public API for CLI/Studio clients (auth required)
     registerExecuteRoutes(scope as unknown as Parameters<typeof registerExecuteRoutes>[0], logger);
+
+    // AI Gateway — OpenAI-compatible LLM endpoint (auth required)
+    registerLLMGatewayRoutes(scope as unknown as Parameters<typeof registerLLMGatewayRoutes>[0], logger);
+
+    // Telemetry ingestion — unified event collection (auth required)
+    registerTelemetryRoutes(scope as unknown as Parameters<typeof registerTelemetryRoutes>[0], logger);
+
+    // Unified Platform API — single dispatch for any adapter (auth required)
+    registerPlatformRoutes(scope as unknown as Parameters<typeof registerPlatformRoutes>[0], logger);
 
     // Internal dispatch endpoint
     const internalSecret = process.env.GATEWAY_INTERNAL_SECRET;
