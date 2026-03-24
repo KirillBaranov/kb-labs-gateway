@@ -1,5 +1,5 @@
 {
-  "name": "kb-labs-gateway",
+  "name": "@kb-labs/gateway",
   "version": "0.1.0",
   "private": true,
   "description": "KB Labs Gateway — central router for all platform clients and services.",

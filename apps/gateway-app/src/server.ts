@@ -90,7 +90,7 @@ export async function createServer(
       // Try to return cached health response
       try {
         const cached = await cache.get<Record<string, unknown>>(HEALTH_CACHE_KEY);
-        if (cached) return cached;
+        if (cached) {return cached;}
       } catch { /* cache miss or error, compute fresh */ }
 
       const adapterNames = ['llm', 'cache', 'analytics', 'vectorStore', 'embeddings'] as const;

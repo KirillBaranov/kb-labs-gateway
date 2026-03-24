@@ -283,7 +283,7 @@ describe('POST /telemetry/v1/ingest', () => {
     let callCount = 0;
     (mockAnalytics.track as any).mockImplementation(async () => {
       callCount++;
-      if (callCount === 2) throw new Error('Failed event 2');
+      if (callCount === 2) {throw new Error('Failed event 2');}
     });
 
     const res = await app.inject({
