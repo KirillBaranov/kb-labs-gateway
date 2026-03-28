@@ -18,7 +18,7 @@ import {
  * The scope is expected to have the auth middleware already applied.
  */
 export function registerTelemetryRoutes(app: FastifyInstance, logger: ILogger): void {
-  app.post('/telemetry/v1/ingest', async (request, reply) => {
+  app.post('/telemetry/v1/ingest', { schema: { tags: ['Telemetry'], summary: 'Ingest telemetry events' } }, async (request, reply) => {
     const auth = request.authContext;
     if (!auth) {
       return reply.code(401).send({ error: 'Unauthorized' });

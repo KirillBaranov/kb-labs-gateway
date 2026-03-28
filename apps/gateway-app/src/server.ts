@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
 import fastifyHttpProxy from '@fastify/http-proxy';
 import { platform } from '@kb-labs/core-runtime';
+import { registerOpenAPI } from '@kb-labs/shared-http';
 import type { ICache, ILogger } from '@kb-labs/core-platform';
 import type { GatewayConfig } from '@kb-labs/gateway-contracts';
 import { HostRegistrationSchema } from '@kb-labs/gateway-contracts';
@@ -12,6 +13,7 @@ import { registerExecuteRoutes } from './execute/routes.js';
 import { registerLLMGatewayRoutes } from './llm/routes.js';
 import { registerTelemetryRoutes } from './telemetry/routes.js';
 import { registerPlatformRoutes } from './platform/routes.js';
+import { registerAggregatedDocsRoutes } from './docs/routes.js';
 import { HostRegistry } from './hosts/registry.js';
 import { globalDispatcher } from './hosts/dispatcher.js';
 import { attachGatewayWs } from './ws/gateway-ws.js';
@@ -43,6 +45,17 @@ export async function createServer(
 ) {
   const app = Fastify({
     loggerInstance: pinoCompatibleLogger(logger) as unknown as Parameters<typeof Fastify>[0]['loggerInstance'],
+  });
+
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  // OpenAPI / Swagger UI — must be registered before routes
+  await registerOpenAPI(app, {
+    title: 'KB Labs Gateway',
+    description: 'Central API gateway — auth, LLM, telemetry, platform dispatch',
+    version: '1.0.0',
+    servers: [{ url: 'http://localhost:4000', description: 'Local dev' }],
+    ui: !isProduction,
   });
 
   await app.register(fastifyCors, { origin: true });
@@ -86,7 +99,7 @@ export async function createServer(
     const HEALTH_CACHE_TTL = 15_000; // 15s cache to prevent health DDoS
     const startupTime = Date.now();
 
-    scope.get('/health', async () => {
+    scope.get('/health', { schema: { tags: ['System'], summary: 'Gateway health check' } }, async () => {
       // Try to return cached health response
       try {
         const cached = await cache.get<Record<string, unknown>>(HEALTH_CACHE_KEY);
@@ -148,7 +161,7 @@ export async function createServer(
       logger.warn('No persistent HostRegistry injected — hosts will be lost on restart');
     }
     const hostRegistry = registry ?? new HostRegistry(cache);
-    scope.post('/hosts/register', async (request, reply) => {
+    scope.post('/hosts/register', { schema: { tags: ['Hosts'], summary: 'Register a host' } }, async (request, reply) => {
       const parsed = HostRegistrationSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.code(400).send({ error: 'Bad Request', issues: parsed.error.issues });
@@ -162,7 +175,7 @@ export async function createServer(
     });
 
     // List hosts (auth required)
-    scope.get('/hosts', async (request, reply) => {
+    scope.get('/hosts', { schema: { tags: ['Hosts'], summary: 'List registered hosts' } }, async (request, reply) => {
       const auth = request.authContext;
       if (!auth) {
         return reply.code(401).send({ error: 'Unauthorized' });
@@ -172,7 +185,7 @@ export async function createServer(
     });
 
     // Get host by ID (auth required)
-    scope.get<{ Params: { hostId: string } }>('/hosts/:hostId', async (request, reply) => {
+    scope.get<{ Params: { hostId: string } }>('/hosts/:hostId', { schema: { tags: ['Hosts'], summary: 'Get host by ID' } }, async (request, reply) => {
       const auth = request.authContext;
       if (!auth) {
         return reply.code(401).send({ error: 'Unauthorized' });
@@ -186,7 +199,7 @@ export async function createServer(
     });
 
     // Deregister host (auth required)
-    scope.delete<{ Params: { hostId: string } }>('/hosts/:hostId', async (request, reply) => {
+    scope.delete<{ Params: { hostId: string } }>('/hosts/:hostId', { schema: { tags: ['Hosts'], summary: 'Deregister a host' } }, async (request, reply) => {
       const auth = request.authContext;
       if (!auth) {
         return reply.code(401).send({ error: 'Unauthorized' });
@@ -210,6 +223,9 @@ export async function createServer(
 
     // Unified Platform API — single dispatch for any adapter (auth required)
     registerPlatformRoutes(scope as unknown as Parameters<typeof registerPlatformRoutes>[0], logger);
+
+    // Aggregated docs — /openapi-merged.json + /docs-all
+    registerAggregatedDocsRoutes(scope as unknown as Parameters<typeof registerAggregatedDocsRoutes>[0], cache);
 
     // Internal dispatch endpoint
     const internalSecret = process.env.GATEWAY_INTERNAL_SECRET;

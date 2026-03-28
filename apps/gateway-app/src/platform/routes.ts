@@ -66,8 +66,10 @@ function isAsyncIterable(value: unknown): value is AsyncIterable<unknown> {
 // ── Route registration ────────────────────────────────────────────────────
 
 export function registerPlatformRoutes(app: FastifyInstance, logger: ILogger): void {
+  // hide: true — can return SSE (text/event-stream) for streaming adapter calls, incompatible with OpenAPI response schema
   app.post<{ Params: { adapter: string; method: string } }>(
     '/platform/v1/:adapter/:method',
+    { schema: { tags: ['Platform'], summary: 'Invoke a platform adapter method', hide: true } },
     async (request, reply) => {
       const auth = request.authContext;
       if (!auth) {

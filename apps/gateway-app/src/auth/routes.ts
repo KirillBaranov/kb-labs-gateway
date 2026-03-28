@@ -15,7 +15,7 @@ import {
 
 export function registerAuthRoutes(app: FastifyInstance, authService: AuthService): void {
   // Register new agent
-  app.post('/auth/register', async (request, reply) => {
+  app.post('/auth/register', { schema: { tags: ['Auth'], summary: 'Register new agent and get credentials' } }, async (request, reply) => {
     const parsed = RegisterRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Bad Request', issues: parsed.error.issues });
@@ -26,7 +26,7 @@ export function registerAuthRoutes(app: FastifyInstance, authService: AuthServic
   });
 
   // Issue token pair
-  app.post('/auth/token', async (request, reply) => {
+  app.post('/auth/token', { schema: { tags: ['Auth'], summary: 'Issue JWT token pair' } }, async (request, reply) => {
     const parsed = TokenRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Bad Request', issues: parsed.error.issues });
@@ -41,7 +41,7 @@ export function registerAuthRoutes(app: FastifyInstance, authService: AuthServic
   });
 
   // Refresh token pair
-  app.post('/auth/refresh', async (request, reply) => {
+  app.post('/auth/refresh', { schema: { tags: ['Auth'], summary: 'Refresh JWT token pair' } }, async (request, reply) => {
     const parsed = RefreshRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Bad Request', issues: parsed.error.issues });

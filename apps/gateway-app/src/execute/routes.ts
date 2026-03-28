@@ -27,8 +27,9 @@ import { CancelledError } from './errors.js';
 export function registerExecuteRoutes(app: FastifyInstance, logger: ILogger): void {
   /**
    * POST /api/v1/execute
+   * hide: true — uses ndjson chunked streaming via reply.raw, incompatible with OpenAPI response schema
    */
-  app.post('/api/v1/execute', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/api/v1/execute', { schema: { tags: ['Execute'], summary: 'Execute a plugin handler', hide: true } }, async (request: FastifyRequest, reply: FastifyReply) => {
     const auth = request.authContext;
     if (!auth) {
       return reply.code(401).send({ error: 'Unauthorized' });
@@ -169,7 +170,7 @@ export function registerExecuteRoutes(app: FastifyInstance, logger: ILogger): vo
   /**
    * POST /api/v1/execute/:executionId/cancel
    */
-  app.post('/api/v1/execute/:executionId/cancel', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/api/v1/execute/:executionId/cancel', { schema: { tags: ['Execute'], summary: 'Cancel an active execution' } }, async (request: FastifyRequest, reply: FastifyReply) => {
     const auth = request.authContext;
     if (!auth) {
       return reply.code(401).send({ error: 'Unauthorized' });

@@ -3,35 +3,41 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "@kb-labs/cli-core": [
+        "../../platform/kb-labs-cli/packages/cli-core/src/index.ts"
+      ],
+      "@kb-labs/cli-core/*": [
+        "../../platform/kb-labs-cli/packages/cli-core/src/*"
+      ],
       "@kb-labs/core-config": [
-        "../kb-labs-core/packages/core-config/src/index.ts"
+        "../../platform/kb-labs-core/packages/core-config/src/index.ts"
       ],
       "@kb-labs/core-config/*": [
-        "../kb-labs-core/packages/core-config/src/*"
+        "../../platform/kb-labs-core/packages/core-config/src/*"
       ],
       "@kb-labs/core-contracts": [
-        "../kb-labs-core/packages/core-contracts/src/index.ts"
+        "../../platform/kb-labs-core/packages/core-contracts/src/index.ts"
       ],
       "@kb-labs/core-contracts/*": [
-        "../kb-labs-core/packages/core-contracts/src/*"
+        "../../platform/kb-labs-core/packages/core-contracts/src/*"
       ],
       "@kb-labs/core-platform": [
-        "../kb-labs-core/packages/core-platform/src/index.ts"
+        "../../platform/kb-labs-core/packages/core-platform/src/index.ts"
       ],
       "@kb-labs/core-platform/*": [
-        "../kb-labs-core/packages/core-platform/src/*"
+        "../../platform/kb-labs-core/packages/core-platform/src/*"
       ],
       "@kb-labs/core-runtime": [
-        "../kb-labs-core/packages/core-runtime/src/index.ts"
+        "../../platform/kb-labs-core/packages/core-runtime/src/index.ts"
       ],
       "@kb-labs/core-runtime/*": [
-        "../kb-labs-core/packages/core-runtime/src/*"
+        "../../platform/kb-labs-core/packages/core-runtime/src/*"
       ],
       "@kb-labs/core-sys": [
-        "../kb-labs-core/packages/core-sys/src/index.ts"
+        "../../platform/kb-labs-core/packages/core-sys/src/index.ts"
       ],
       "@kb-labs/core-sys/*": [
-        "../kb-labs-core/packages/core-sys/src/*"
+        "../../platform/kb-labs-core/packages/core-sys/src/*"
       ],
       "@kb-labs/gateway-auth": [
         "packages/gateway-auth/src/index.ts"
@@ -74,6 +80,12 @@
       ],
       "@kb-labs/plugin-runtime/*": [
         "../kb-labs-plugin/packages/plugin-runtime/src/*"
+      ],
+      "@kb-labs/shared-http": [
+        "../../platform/kb-labs-shared/packages/shared-http/src/index.ts"
+      ],
+      "@kb-labs/shared-http/*": [
+        "../../platform/kb-labs-shared/packages/shared-http/src/*"
       ]
     }
   }

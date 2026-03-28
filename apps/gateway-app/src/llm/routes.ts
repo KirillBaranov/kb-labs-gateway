@@ -53,7 +53,8 @@ async function resolveLLMForTier(tier: LLMTier): Promise<ILLM | undefined> {
  * The scope is expected to have the auth middleware already applied.
  */
 export function registerLLMGatewayRoutes(app: FastifyInstance, logger: ILogger): void {
-  app.post('/llm/v1/chat/completions', async (request, reply) => {
+  // hide: true — can stream SSE (text/event-stream), incompatible with OpenAPI response schema
+  app.post('/llm/v1/chat/completions', { schema: { tags: ['LLM'], summary: 'OpenAI-compatible chat completions', hide: true } }, async (request, reply) => {
     const auth = request.authContext;
     if (!auth) {
       return reply.code(401).send({ error: 'Unauthorized' });
