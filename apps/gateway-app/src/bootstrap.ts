@@ -1,4 +1,5 @@
 import { platform, createServiceBootstrap } from '@kb-labs/core-runtime';
+import { createCorrelatedLogger } from '@kb-labs/shared-http';
 import type { IHostStore } from '@kb-labs/gateway-contracts';
 import { SqliteHostStore } from '@kb-labs/gateway-core';
 import { loadGatewayConfig } from './config.js';
@@ -9,7 +10,13 @@ export async function bootstrap(repoRoot: string = process.cwd()): Promise<void>
   // 1. Initialize platform (loads .env + adapters from kb.config.json)
   await createServiceBootstrap({ appId: 'gateway', repoRoot });
 
-  const logger = platform.logger.child({ layer: 'gateway', service: 'bootstrap' });
+  const logger = createCorrelatedLogger(platform.logger, {
+    serviceId: 'gateway',
+    logsSource: 'gateway',
+    layer: 'gateway',
+    service: 'bootstrap',
+    operation: 'gateway.bootstrap',
+  });
   logger.info('Platform initialized', { repoRoot });
 
   // 2. Load gateway config — reads gateway.upstreams from kb.config.json
@@ -52,7 +59,7 @@ export async function bootstrap(repoRoot: string = process.cwd()): Promise<void>
   const jwtConfig = { secret: jwtSecret ?? 'dev-insecure-secret-change-me' };
 
   // 8. Create server with injected registry
-  const server = await createServer(config, platform.cache, platform.logger, jwtConfig, registry);
+  const server = await createServer(config, platform.cache, platform.logger, jwtConfig, registry, repoRoot);
 
   // 9. Listen
   const address = await server.listen({ port: config.port, host: '0.0.0.0' });

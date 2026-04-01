@@ -2,7 +2,11 @@ import Fastify from 'fastify';
 import fastifyCors from '@fastify/cors';
 import fastifyHttpProxy from '@fastify/http-proxy';
 import { platform } from '@kb-labs/core-runtime';
-import { registerOpenAPI } from '@kb-labs/shared-http';
+import {
+  createCorrelatedLogger,
+  createServiceReadyResponse,
+  registerOpenAPI,
+} from '@kb-labs/shared-http';
 import type { ICache, ILogger } from '@kb-labs/core-platform';
 import type { GatewayConfig } from '@kb-labs/gateway-contracts';
 import { HostRegistrationSchema } from '@kb-labs/gateway-contracts';
@@ -14,27 +18,12 @@ import { registerLLMGatewayRoutes } from './llm/routes.js';
 import { registerTelemetryRoutes } from './telemetry/routes.js';
 import { registerPlatformRoutes } from './platform/routes.js';
 import { registerAggregatedDocsRoutes } from './docs/routes.js';
+import { registerWidgetStaticRoutes } from './widgets/routes.js';
 import { HostRegistry } from './hosts/registry.js';
 import { globalDispatcher } from './hosts/dispatcher.js';
 import { attachGatewayWs } from './ws/gateway-ws.js';
-
-function asMeta(arg: unknown): Record<string, unknown> | undefined {
-  return arg && typeof arg === 'object' && !Array.isArray(arg) ? (arg as Record<string, unknown>) : undefined;
-}
-
-function pinoCompatibleLogger(logger: ILogger) {
-  return {
-    trace: (msg: string, ...args: unknown[]) => logger.debug(msg, asMeta(args[0])),
-    debug: (msg: string, ...args: unknown[]) => logger.debug(msg, asMeta(args[0])),
-    info: (msg: string, ...args: unknown[]) => logger.info(msg, asMeta(args[0])),
-    warn: (msg: string, ...args: unknown[]) => logger.warn(msg, asMeta(args[0])),
-    error: (msg: string, ...args: unknown[]) => logger.error(msg, args[0] instanceof Error ? args[0] : undefined),
-    fatal: (msg: string, ...args: unknown[]) => logger.error(`[FATAL] ${msg}`, args[0] instanceof Error ? args[0] : undefined),
-    child: () => pinoCompatibleLogger(logger),
-    level: 'info',
-    silent: () => {},
-  };
-}
+import { GatewayObservabilityCollector } from './observability/collector.js';
+import { randomUUID } from 'node:crypto';
 
 export async function createServer(
   config: GatewayConfig,
@@ -42,9 +31,17 @@ export async function createServer(
   logger: ILogger,
   jwtConfig: JwtConfig,
   registry?: HostRegistry,
+  repoRoot?: string,
 ) {
+  const gatewayLogger = createCorrelatedLogger(logger, {
+    serviceId: 'gateway',
+    logsSource: 'gateway',
+    layer: 'gateway',
+    service: 'server',
+    operation: 'gateway.http',
+  });
   const app = Fastify({
-    loggerInstance: pinoCompatibleLogger(logger) as unknown as Parameters<typeof Fastify>[0]['loggerInstance'],
+    logger: false,
   });
 
   const isProduction = process.env.NODE_ENV === 'production';
@@ -59,6 +56,40 @@ export async function createServer(
   });
 
   await app.register(fastifyCors, { origin: true });
+  const observability = new GatewayObservabilityCollector(config);
+  observability.register(app);
+  app.addHook('onRequest', async (request, reply) => {
+    const requestId = (request.headers['x-request-id'] as string | undefined) || request.id || randomUUID();
+    const traceId = (request.headers['x-trace-id'] as string | undefined) || randomUUID();
+
+    request.id = requestId;
+    reply.header('X-Request-Id', requestId);
+    reply.header('X-Trace-Id', traceId);
+
+    (request as any).kbLogger = createCorrelatedLogger(logger, {
+      serviceId: 'gateway',
+      logsSource: 'gateway',
+      layer: 'gateway',
+      service: 'request',
+      requestId,
+      traceId,
+      method: request.method,
+      url: request.url,
+      operation: 'http.request',
+    });
+    (request as any).kbLogger.info(`→ ${request.method.toUpperCase()} ${request.url}`);
+  });
+
+  app.addHook('onResponse', async (request, reply) => {
+    const requestLogger = (request as any).kbLogger as { info: (message: string, meta?: Record<string, unknown>) => void } | undefined;
+    if (!requestLogger) {
+      return;
+    }
+
+    requestLogger.info(`✓ ${request.method.toUpperCase()} ${request.url} ${reply.statusCode}`, {
+      statusCode: reply.statusCode,
+    });
+  });
 
   // ── Proxy upstreams ────────────────────────────────────────────────
   // Registered FIRST, before any hooks. Auth is handled by upstreams themselves.
@@ -81,7 +112,7 @@ export async function createServer(
         },
       },
     });
-    logger.info(`Upstream registered: ${name} → ${upstream.url} (${upstream.prefix}${upstream.websocket ? ', ws' : ''})`);
+    gatewayLogger.info(`Upstream registered: ${name} → ${upstream.url} (${upstream.prefix}${upstream.websocket ? ', ws' : ''})`);
   }
 
   // ── Gateway's own routes (with auth) ───────────────────────────────
@@ -99,47 +130,46 @@ export async function createServer(
     const HEALTH_CACHE_TTL = 15_000; // 15s cache to prevent health DDoS
     const startupTime = Date.now();
 
-    scope.get('/health', { schema: { tags: ['System'], summary: 'Gateway health check' } }, async () => {
-      // Try to return cached health response
-      try {
-        const cached = await cache.get<Record<string, unknown>>(HEALTH_CACHE_KEY);
-        if (cached) {return cached;}
-      } catch { /* cache miss or error, compute fresh */ }
+    const collectHealthSnapshot = async () => {
+      const cached = await cache.get<Record<string, unknown>>(HEALTH_CACHE_KEY).catch(() => null);
+      if (cached) {
+        return cached;
+      }
 
       const adapterNames = ['llm', 'cache', 'analytics', 'vectorStore', 'embeddings'] as const;
       const adapters: Record<string, { available: boolean; latencyMs?: number }> = {};
 
       for (const name of adapterNames) {
-        const probeStart = Date.now();
-        try {
-          const adapter = (platform as any)[name];
-          adapters[name] = { available: !!adapter, latencyMs: Date.now() - probeStart };
-        } catch {
-          adapters[name] = { available: false, latencyMs: Date.now() - probeStart };
-        }
+        await observability.observeOperation(`gateway.adapter.${name}`, async () => {
+          const probeStart = Date.now();
+          try {
+            const adapter = (platform as any)[name];
+            adapters[name] = { available: !!adapter, latencyMs: Date.now() - probeStart };
+          } catch {
+            adapters[name] = { available: false, latencyMs: Date.now() - probeStart };
+          }
+        });
       }
 
-      // Probe upstreams (HTTP GET /health with 2s timeout)
       const upstreams: Record<string, { status: string; latencyMs?: number }> = {};
       for (const [name, upstream] of Object.entries(config.upstreams)) {
-        const probeStart = Date.now();
-        try {
-          const res = await fetch(`${upstream.url}/health`, {
-            signal: AbortSignal.timeout(2000),
-          });
-          upstreams[name] = { status: res.ok ? 'up' : 'down', latencyMs: Date.now() - probeStart };
-        } catch {
-          upstreams[name] = { status: 'down', latencyMs: Date.now() - probeStart };
-        }
+        await observability.observeOperation(`gateway.upstream.${name}.health`, async () => {
+          const probeStart = Date.now();
+          try {
+            const res = await fetch(`${upstream.url}/health`, {
+              signal: AbortSignal.timeout(2000),
+            });
+            upstreams[name] = { status: res.ok ? 'up' : 'down', latencyMs: Date.now() - probeStart };
+          } catch {
+            upstreams[name] = { status: 'down', latencyMs: Date.now() - probeStart };
+          }
+        });
       }
 
-      // Derive overall status: LLM is critical
       const llmOk = adapters.llm?.available ?? false;
       const allOk = Object.values(adapters).every((a) => a.available);
-      const status = llmOk ? (allOk ? 'healthy' : 'degraded') : 'unhealthy';
-
-      const response = {
-        status,
+      const snapshot = {
+        status: llmOk ? (allOk ? 'healthy' : 'degraded') : 'unhealthy',
         version: '1.0',
         uptime: Math.floor((Date.now() - startupTime) / 1000),
         timestamp: new Date().toISOString(),
@@ -147,18 +177,72 @@ export async function createServer(
         upstreams,
       };
 
-      // Cache for 15 seconds
-      try {
-        await cache.set(HEALTH_CACHE_KEY, response, HEALTH_CACHE_TTL);
-      } catch { /* cache write failure is non-critical */ }
+      await cache.set(HEALTH_CACHE_KEY, snapshot, HEALTH_CACHE_TTL).catch(() => {});
+      return snapshot;
+    };
 
-      return response;
+    scope.get('/health', { schema: { tags: ['System'], summary: 'Gateway health check' } }, async () => {
+      return collectHealthSnapshot();
+    });
+
+    scope.get('/ready', { schema: { tags: ['System'], summary: 'Gateway readiness check' } }, async (_request, reply) => {
+      const health = await collectHealthSnapshot();
+      const upstreams = (health.upstreams as Record<string, { status?: string }> | undefined) ?? {};
+      const missingRequiredUpstreams = ['rest']
+        .filter((id) => (upstreams[id]?.status ?? 'down') !== 'up');
+      const ready = missingRequiredUpstreams.length === 0;
+
+      return reply.code(ready ? 200 : 503).send(createServiceReadyResponse({
+        ready,
+        status: ready ? 'ready' : 'degraded',
+        reason: ready ? 'ready' : `upstream_unavailable:${missingRequiredUpstreams.join(',')}`,
+        components: {
+          gatewayAdapters: {
+            ready: true,
+          },
+          restUpstream: {
+            ready: (upstreams.rest?.status ?? 'down') === 'up',
+            status: upstreams.rest?.status ?? 'down',
+          },
+          workflowUpstream: {
+            ready: (upstreams.workflow?.status ?? 'down') === 'up',
+            status: upstreams.workflow?.status ?? 'down',
+          },
+          marketplaceUpstream: {
+            ready: (upstreams.marketplace?.status ?? 'down') === 'up',
+            status: upstreams.marketplace?.status ?? 'down',
+          },
+        },
+      }));
+    });
+
+    scope.get('/metrics', { schema: { tags: ['Observability'], summary: 'Gateway metrics in Prometheus format' } }, async (_request, reply) => {
+      const health = await collectHealthSnapshot();
+      const status = (health.status as 'healthy' | 'degraded' | 'unhealthy' | undefined) ?? 'healthy';
+      reply.header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+      return observability.renderPrometheusMetrics(status);
+    });
+
+    scope.get('/observability/describe', {
+      schema: { tags: ['Observability'], summary: 'Gateway observability contract descriptor' },
+    }, async () => observability.buildDescribe());
+
+    scope.get('/observability/health', {
+      schema: { tags: ['Observability'], summary: 'Gateway observability health snapshot' },
+    }, async () => {
+      const health = await collectHealthSnapshot();
+      const adapterChecks = Object.entries((health.adapters as Record<string, { available?: boolean; latencyMs?: number }> | undefined) ?? {})
+        .map(([id, value]) => ({ id, available: !!value?.available, latencyMs: value?.latencyMs }));
+      const upstreamChecks = Object.entries((health.upstreams as Record<string, { status?: string; latencyMs?: number }> | undefined) ?? {})
+        .map(([id, value]) => ({ id, status: value?.status ?? 'unknown', latencyMs: value?.latencyMs }));
+      const status = (health.status as 'healthy' | 'degraded' | 'unhealthy' | undefined) ?? 'healthy';
+      return observability.buildHealth({ status, adapterChecks, upstreamChecks });
     });
 
     // Host registration (public)
     // Use injected registry (with persistence) or fallback to cache-only
     if (!registry) {
-      logger.warn('No persistent HostRegistry injected — hosts will be lost on restart');
+      gatewayLogger.warn('No persistent HostRegistry injected — hosts will be lost on restart');
     }
     const hostRegistry = registry ?? new HostRegistry(cache);
     scope.post('/hosts/register', { schema: { tags: ['Hosts'], summary: 'Register a host' } }, async (request, reply) => {
@@ -226,6 +310,11 @@ export async function createServer(
 
     // Aggregated docs — /openapi-merged.json + /docs-all
     registerAggregatedDocsRoutes(scope as unknown as Parameters<typeof registerAggregatedDocsRoutes>[0], cache);
+
+    // Plugin widget bundles — static files from node_modules (auth required)
+    if (repoRoot) {
+      registerWidgetStaticRoutes(scope as unknown as Parameters<typeof registerWidgetStaticRoutes>[0], repoRoot);
+    }
 
     // Internal dispatch endpoint
     const internalSecret = process.env.GATEWAY_INTERNAL_SECRET;
