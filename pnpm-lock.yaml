@@ -51,57 +51,11 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
-  ../../platform/kb-labs-cli/packages/cli-api:
-    dependencies:
-      '@kb-labs/cli-core':
-        specifier: workspace:*
-        version: link:../cli-core
-      '@kb-labs/core-platform':
-        specifier: link:../../../kb-labs-core/packages/core-platform
-        version: link:../../../kb-labs-core/packages/core-platform
-      '@kb-labs/plugin-contracts':
-        specifier: link:../../../../infra/kb-labs-plugin/packages/plugin-contracts
-        version: link:../../../../infra/kb-labs-plugin/packages/plugin-contracts
-      glob:
-        specifier: ^11.0.0
-        version: 11.1.0
-      redis:
-        specifier: latest
-        version: 5.11.0
-      yaml:
-        specifier: ^2.8.2
-        version: 2.8.3
-      zod:
-        specifier: ^3.24.1
-        version: 3.25.76
-    devDependencies:
-      '@kb-labs/devkit':
-        specifier: link:../../../../infra/kb-labs-devkit
-        version: link:../../../../infra/kb-labs-devkit
-      '@types/node':
-        specifier: ^24.3.3
-        version: 24.12.0
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.6.3
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
-
   ../../platform/kb-labs-cli/packages/cli-bin:
     dependencies:
       '@kb-labs/cli-commands':
         specifier: workspace:*
         version: link:../cli-commands
-      '@kb-labs/cli-core':
-        specifier: workspace:*
-        version: link:../cli-core
       '@kb-labs/cli-runtime':
         specifier: workspace:*
         version: link:../cli-runtime
@@ -181,21 +135,24 @@ importers:
 
   ../../platform/kb-labs-cli/packages/cli-commands:
     dependencies:
-      '@kb-labs/cli-api':
-        specifier: workspace:*
-        version: link:../cli-api
       '@kb-labs/cli-contracts':
         specifier: workspace:*
         version: link:../cli-contracts
-      '@kb-labs/cli-core':
+      '@kb-labs/cli-runtime':
         specifier: workspace:*
-        version: link:../cli-core
+        version: link:../cli-runtime
+      '@kb-labs/core-discovery':
+        specifier: link:../../../kb-labs-core/packages/core-discovery
+        version: link:../../../kb-labs-core/packages/core-discovery
       '@kb-labs/core-ipc':
         specifier: link:../../../kb-labs-core/packages/core-ipc
         version: link:../../../kb-labs-core/packages/core-ipc
       '@kb-labs/core-platform':
         specifier: link:../../../kb-labs-core/packages/core-platform
         version: link:../../../kb-labs-core/packages/core-platform
+      '@kb-labs/core-registry':
+        specifier: link:../../../kb-labs-core/packages/core-registry
+        version: link:../../../kb-labs-core/packages/core-registry
       '@kb-labs/core-resource-broker':
         specifier: link:../../../kb-labs-core/packages/core-resource-broker
         version: link:../../../kb-labs-core/packages/core-resource-broker
@@ -331,7 +288,7 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
-  ../../platform/kb-labs-cli/packages/cli-core:
+  ../../platform/kb-labs-cli/packages/cli-runtime:
     dependencies:
       '@kb-labs/cli-contracts':
         specifier: workspace:*
@@ -357,64 +314,12 @@ importers:
       '@kb-labs/plugin-runtime':
         specifier: link:../../../../infra/kb-labs-plugin/packages/plugin-runtime
         version: link:../../../../infra/kb-labs-plugin/packages/plugin-runtime
-      chokidar:
-        specifier: ^4.0.0
-        version: 4.0.3
-      colorette:
-        specifier: ^2.0.20
-        version: 2.0.20
-      glob:
-        specifier: ^11.0.0
-        version: 11.1.0
-      semver:
-        specifier: ^7.6.3
-        version: 7.7.4
-      yaml:
-        specifier: ^2.8.0
-        version: 2.8.3
-      zod:
-        specifier: ^3.23.8
-        version: 3.25.76
-    devDependencies:
-      '@kb-labs/devkit':
-        specifier: link:../../../../infra/kb-labs-devkit
-        version: link:../../../../infra/kb-labs-devkit
-      '@types/node':
-        specifier: ^24.3.3
-        version: 24.12.0
-      '@types/picomatch':
-        specifier: ^4
-        version: 4.0.2
-      '@types/semver':
-        specifier: ^7.5.8
-        version: 7.7.1
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.6.3
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
-
-  ../../platform/kb-labs-cli/packages/cli-runtime:
-    dependencies:
-      '@kb-labs/cli-contracts':
-        specifier: workspace:*
-        version: link:../cli-contracts
-      '@kb-labs/cli-core':
-        specifier: workspace:*
-        version: link:../cli-core
-      '@kb-labs/core-sys':
-        specifier: link:../../../kb-labs-core/packages/core-sys
-        version: link:../../../kb-labs-core/packages/core-sys
       cli-table3:
         specifier: ^0.6.5
         version: 0.6.5
+      colorette:
+        specifier: ^2.0.20
+        version: 2.0.20
       yaml:
         specifier: ^2.8.0
         version: 2.8.3
@@ -548,6 +453,34 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
+  ../../platform/kb-labs-core/packages/core-discovery:
+    dependencies:
+      '@kb-labs/core-sys':
+        specifier: workspace:*
+        version: link:../core-sys
+      '@kb-labs/plugin-contracts':
+        specifier: link:../../../../infra/kb-labs-plugin/packages/plugin-contracts
+        version: link:../../../../infra/kb-labs-plugin/packages/plugin-contracts
+    devDependencies:
+      '@kb-labs/devkit':
+        specifier: link:../../../../infra/kb-labs-devkit
+        version: link:../../../../infra/kb-labs-devkit
+      '@types/node':
+        specifier: ^24.3.3
+        version: 24.12.0
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+
   ../../platform/kb-labs-core/packages/core-ipc:
     dependencies:
       '@kb-labs/core-platform':
@@ -632,6 +565,40 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
+  ../../platform/kb-labs-core/packages/core-registry:
+    dependencies:
+      '@kb-labs/core-discovery':
+        specifier: workspace:*
+        version: link:../core-discovery
+      '@kb-labs/core-platform':
+        specifier: workspace:*
+        version: link:../core-platform
+      '@kb-labs/core-sys':
+        specifier: workspace:*
+        version: link:../core-sys
+      '@kb-labs/plugin-contracts':
+        specifier: link:../../../../infra/kb-labs-plugin/packages/plugin-contracts
+        version: link:../../../../infra/kb-labs-plugin/packages/plugin-contracts
+    devDependencies:
+      '@kb-labs/devkit':
+        specifier: link:../../../../infra/kb-labs-devkit
+        version: link:../../../../infra/kb-labs-devkit
+      '@types/node':
+        specifier: ^24.3.3
+        version: 24.12.0
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+
   ../../platform/kb-labs-core/packages/core-resource-broker:
     dependencies:
       '@kb-labs/core-platform':
@@ -668,6 +635,9 @@ importers:
       '@kb-labs/core-contracts':
         specifier: workspace:*
         version: link:../core-contracts
+      '@kb-labs/core-discovery':
+        specifier: workspace:*
+        version: link:../core-discovery
       '@kb-labs/core-ipc':
         specifier: workspace:*
         version: link:../core-ipc
@@ -683,9 +653,6 @@ importers:
       '@kb-labs/plugin-execution-factory':
         specifier: link:../../../../infra/kb-labs-plugin/packages/plugin-execution-factory
         version: link:../../../../infra/kb-labs-plugin/packages/plugin-execution-factory
-      glob:
-        specifier: ^11.0.0
-        version: 11.1.0
       zod:
         specifier: ^4.1.5
         version: 4.3.6
@@ -776,21 +743,27 @@ importers:
 
   ../../platform/kb-labs-core/packages/core-state-daemon:
     dependencies:
-      '@kb-labs/core-platform':
+      '@fastify/swagger':
+        specifier: '>=9.5.1'
+        version: 9.7.0
+      '@fastify/swagger-ui':
+        specifier: ^5.2.0
+        version: 5.2.5
+      '@kb-labs/core-contracts':
         specifier: workspace:*
-        version: link:../core-platform
-      '@kb-labs/core-runtime':
-        specifier: workspace:*
-        version: link:../core-runtime
+        version: link:../core-contracts
       '@kb-labs/core-state-broker':
         specifier: workspace:*
         version: link:../core-state-broker
-      '@kb-labs/plugin-runtime':
-        specifier: link:../../../../infra/kb-labs-plugin/packages/plugin-runtime
-        version: link:../../../../infra/kb-labs-plugin/packages/plugin-runtime
-      '@kb-labs/shared-command-kit':
-        specifier: link:../../../kb-labs-shared/packages/shared-command-kit
-        version: link:../../../kb-labs-shared/packages/shared-command-kit
+      '@kb-labs/shared-http':
+        specifier: link:../../../kb-labs-shared/packages/shared-http
+        version: link:../../../kb-labs-shared/packages/shared-http
+      fastify:
+        specifier: ^5.2.0
+        version: 5.8.4
+      fastify-type-provider-zod:
+        specifier: ^6.0.0
+        version: 6.1.0(@fastify/swagger@9.7.0)(fastify@5.8.4)(openapi-types@12.1.3)(zod@4.3.6)
     devDependencies:
       '@kb-labs/devkit':
         specifier: link:../../../../infra/kb-labs-devkit
@@ -1024,9 +997,15 @@ importers:
       '@kb-labs/shared-tool-kit':
         specifier: link:../../../kb-labs-shared/packages/shared-tool-kit
         version: link:../../../kb-labs-shared/packages/shared-tool-kit
-      '@kb-labs/studio-contracts':
-        specifier: link:../../../kb-labs-studio/packages/studio-contracts
-        version: link:../../../kb-labs-studio/packages/studio-contracts
+      '@kb-labs/studio-event-bus':
+        specifier: link:../../../kb-labs-studio/packages/studio-event-bus
+        version: link:../../../kb-labs-studio/packages/studio-event-bus
+      '@kb-labs/studio-hooks':
+        specifier: link:../../../kb-labs-studio/packages/studio-hooks
+        version: link:../../../kb-labs-studio/packages/studio-hooks
+      '@kb-labs/studio-ui-kit':
+        specifier: link:../../../kb-labs-studio/packages/studio-ui-kit
+        version: link:../../../kb-labs-studio/packages/studio-ui-kit
     devDependencies:
       '@kb-labs/devkit':
         specifier: link:../../../../infra/kb-labs-devkit
@@ -1098,9 +1077,6 @@ importers:
       '@kb-labs/shared-cli-ui':
         specifier: workspace:*
         version: link:../shared-cli-ui
-      '@kb-labs/studio-contracts':
-        specifier: link:../../../kb-labs-studio/packages/studio-contracts
-        version: link:../../../kb-labs-studio/packages/studio-contracts
       glob:
         specifier: ^11.0.0
         version: 11.1.0
@@ -1130,23 +1106,26 @@ importers:
   ../../platform/kb-labs-shared/packages/shared-http:
     dependencies:
       '@fastify/swagger':
-        specifier: '>=8 <10'
+        specifier: '>=9.5.1'
         version: 9.7.0
       '@fastify/swagger-ui':
-        specifier: '>=4 <6'
+        specifier: ^5.2.0
         version: 5.2.5
+      '@kb-labs/core-contracts':
+        specifier: link:../../../kb-labs-core/packages/core-contracts
+        version: link:../../../kb-labs-core/packages/core-contracts
       fastify:
-        specifier: '>=4 <6'
+        specifier: ^5.5.0
         version: 5.8.4
       fastify-type-provider-zod:
-        specifier: '>=4'
-        version: 4.0.2(fastify@5.8.4)(zod@3.25.76)
+        specifier: ^6.0.0
+        version: 6.1.0(@fastify/swagger@9.7.0)(fastify@5.8.4)(openapi-types@12.1.3)(zod@4.3.6)
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.0.0
+        version: 4.3.6
       zod-to-json-schema:
-        specifier: ^3.24.5
-        version: 3.25.1(zod@3.25.76)
+        specifier: ^3.25.0
+        version: 3.25.1(zod@4.3.6)
     devDependencies:
       '@kb-labs/devkit':
         specifier: link:../../../../infra/kb-labs-devkit
@@ -1244,7 +1223,7 @@ importers:
     dependencies:
       '@ant-design/charts':
         specifier: ^2.6.6
-        version: 2.6.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))
+        version: 2.6.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4))
       '@ant-design/icons':
         specifier: ^5.4.0
         version: 5.6.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1266,12 +1245,18 @@ importers:
       '@kb-labs/rest-api-contracts':
         specifier: link:../../../kb-labs-rest-api/packages/rest-api-contracts
         version: link:../../../kb-labs-rest-api/packages/rest-api-contracts
-      '@kb-labs/studio-contracts':
-        specifier: link:../../packages/studio-contracts
-        version: link:../../packages/studio-contracts
       '@kb-labs/studio-data-client':
         specifier: link:../../packages/studio-data-client
         version: link:../../packages/studio-data-client
+      '@kb-labs/studio-event-bus':
+        specifier: link:../../packages/studio-event-bus
+        version: link:../../packages/studio-event-bus
+      '@kb-labs/studio-federation':
+        specifier: link:../../packages/studio-federation
+        version: link:../../packages/studio-federation
+      '@kb-labs/studio-hooks':
+        specifier: link:../../packages/studio-hooks
+        version: link:../../packages/studio-hooks
       '@kb-labs/studio-ui-core':
         specifier: link:../../packages/studio-ui-core
         version: link:../../packages/studio-ui-core
@@ -1292,7 +1277,7 @@ importers:
         version: 1.3.6
       antd:
         specifier: ^5.21.0
-        version: 5.29.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 5.29.3(luxon@3.7.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -1336,6 +1321,9 @@ importers:
       '@kb-labs/devkit':
         specifier: link:../../../../infra/kb-labs-devkit
         version: link:../../../../infra/kb-labs-devkit
+      '@module-federation/vite':
+        specifier: ^1.13.0
+        version: 1.13.7(rollup@4.60.0)(typescript@5.9.3)(vite@6.4.1(@types/node@22.19.15)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
       '@types/dompurify':
         specifier: ^3.2.0
         version: 3.2.0
@@ -1379,34 +1367,6 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@22.19.15)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
-  ../../platform/kb-labs-studio/packages/studio-contracts:
-    dependencies:
-      zod:
-        specifier: ^3.23.8
-        version: 3.25.76
-    devDependencies:
-      '@kb-labs/devkit':
-        specifier: link:../../../../infra/kb-labs-devkit
-        version: link:../../../../infra/kb-labs-devkit
-      '@types/node':
-        specifier: ^24.3.3
-        version: 24.12.0
-      eslint:
-        specifier: ^9
-        version: 9.39.4(jiti@2.6.1)
-      rimraf:
-        specifier: ^6.0.1
-        version: 6.1.3
-      tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
-      typescript:
-        specifier: ^5.6.3
-        version: 5.9.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
-
   ../../platform/kb-labs-studio/packages/studio-data-client:
     dependencies:
       '@kb-labs/agent-contracts':
@@ -1415,6 +1375,9 @@ importers:
       '@kb-labs/commit-contracts':
         specifier: link:../../../../plugins/kb-labs-commit-plugin/packages/commit-contracts
         version: link:../../../../plugins/kb-labs-commit-plugin/packages/commit-contracts
+      '@kb-labs/core-contracts':
+        specifier: link:../../../kb-labs-core/packages/core-contracts
+        version: link:../../../kb-labs-core/packages/core-contracts
       '@kb-labs/core-platform':
         specifier: link:../../../kb-labs-core/packages/core-platform
         version: link:../../../kb-labs-core/packages/core-platform
@@ -1474,6 +1437,154 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
+  ../../platform/kb-labs-studio/packages/studio-event-bus:
+    dependencies:
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+    devDependencies:
+      '@kb-labs/devkit':
+        specifier: link:../../../../infra/kb-labs-devkit
+        version: link:../../../../infra/kb-labs-devkit
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@types/react':
+        specifier: ^18.3.18
+        version: 18.3.28
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  ../../platform/kb-labs-studio/packages/studio-federation:
+    dependencies:
+      '@kb-labs/plugin-contracts':
+        specifier: link:../../../../infra/kb-labs-plugin/packages/plugin-contracts
+        version: link:../../../../infra/kb-labs-plugin/packages/plugin-contracts
+      '@kb-labs/studio-event-bus':
+        specifier: workspace:*
+        version: link:../studio-event-bus
+      '@kb-labs/studio-hooks':
+        specifier: workspace:*
+        version: link:../studio-hooks
+      '@module-federation/runtime':
+        specifier: ^2.3.0
+        version: 2.3.1
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@kb-labs/devkit':
+        specifier: link:../../../../infra/kb-labs-devkit
+        version: link:../../../../infra/kb-labs-devkit
+      '@types/react':
+        specifier: ^18.3.18
+        version: 18.3.28
+      '@types/react-dom':
+        specifier: ^18.3.5
+        version: 18.3.7(@types/react@18.3.28)
+      antd:
+        specifier: ^5.21.0
+        version: 5.29.3(luxon@3.7.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  ../../platform/kb-labs-studio/packages/studio-hooks:
+    dependencies:
+      '@kb-labs/studio-event-bus':
+        specifier: workspace:*
+        version: link:../studio-event-bus
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@kb-labs/devkit':
+        specifier: link:../../../../infra/kb-labs-devkit
+        version: link:../../../../infra/kb-labs-devkit
+      '@tanstack/react-query':
+        specifier: ^5.62.23
+        version: 5.95.2(react@18.3.1)
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@types/react':
+        specifier: ^18.3.18
+        version: 18.3.28
+      '@types/react-dom':
+        specifier: ^18.3.5
+        version: 18.3.7(@types/react@18.3.28)
+      antd:
+        specifier: ^5.21.0
+        version: 5.29.3(luxon@3.7.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react-router-dom:
+        specifier: ^7.1.4
+        version: 7.13.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  ../../platform/kb-labs-studio/packages/studio-plugin-tools:
+    dependencies:
+      '@module-federation/vite':
+        specifier: ^1.13.0
+        version: 1.13.7(rollup@4.60.0)(typescript@5.9.3)(vite@6.4.1(@types/node@24.12.0)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
+    devDependencies:
+      '@kb-labs/devkit':
+        specifier: link:../../../../infra/kb-labs-devkit
+        version: link:../../../../infra/kb-labs-devkit
+      '@types/node':
+        specifier: ^24.3.3
+        version: 24.12.0
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.1.3
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.8)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.7
+        version: 6.4.1(@types/node@24.12.0)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.12.0)(@vitest/ui@3.2.4)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+
   ../../platform/kb-labs-studio/packages/studio-ui-core:
     devDependencies:
       '@kb-labs/devkit':
@@ -1505,7 +1616,7 @@ importers:
         version: link:../studio-ui-core
       antd:
         specifier: ^5.22.5
-        version: 5.29.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 5.29.3(luxon@3.7.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -1515,7 +1626,7 @@ importers:
     devDependencies:
       '@ant-design/charts':
         specifier: ^2.6.6
-        version: 2.6.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))
+        version: 2.6.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4))
       '@kb-labs/devkit':
         specifier: link:../../../../infra/kb-labs-devkit
         version: link:../../../../infra/kb-labs-devkit
@@ -1838,9 +1949,6 @@ importers:
       '@kb-labs/core-platform':
         specifier: link:../../../../platform/kb-labs-core/packages/core-platform
         version: link:../../../../platform/kb-labs-core/packages/core-platform
-      '@kb-labs/studio-contracts':
-        specifier: link:../../../../platform/kb-labs-studio/packages/studio-contracts
-        version: link:../../../../platform/kb-labs-studio/packages/studio-contracts
     devDependencies:
       '@kb-labs/devkit':
         specifier: link:../../../kb-labs-devkit
@@ -1961,9 +2069,6 @@ importers:
       '@kb-labs/shared-cli-ui':
         specifier: link:../../../../platform/kb-labs-shared/packages/shared-cli-ui
         version: link:../../../../platform/kb-labs-shared/packages/shared-cli-ui
-      '@kb-labs/studio-contracts':
-        specifier: link:../../../../platform/kb-labs-studio/packages/studio-contracts
-        version: link:../../../../platform/kb-labs-studio/packages/studio-contracts
     devDependencies:
       '@kb-labs/devkit':
         specifier: link:../../../kb-labs-devkit
@@ -1999,7 +2104,7 @@ importers:
         specifier: ^11.4.1
         version: 11.4.2
       '@fastify/swagger':
-        specifier: ^9.4.0
+        specifier: '>=9.5.1'
         version: 9.7.0
       '@fastify/swagger-ui':
         specifier: ^5.2.0
@@ -2007,9 +2112,6 @@ importers:
       '@fastify/websocket':
         specifier: ^11.0.1
         version: 11.2.0
-      '@kb-labs/cli-core':
-        specifier: link:../../../../platform/kb-labs-cli/packages/cli-core
-        version: link:../../../../platform/kb-labs-cli/packages/cli-core
       '@kb-labs/core-config':
         specifier: link:../../../../platform/kb-labs-core/packages/core-config
         version: link:../../../../platform/kb-labs-core/packages/core-config
@@ -2019,6 +2121,9 @@ importers:
       '@kb-labs/core-platform':
         specifier: link:../../../../platform/kb-labs-core/packages/core-platform
         version: link:../../../../platform/kb-labs-core/packages/core-platform
+      '@kb-labs/core-registry':
+        specifier: link:../../../../platform/kb-labs-core/packages/core-registry
+        version: link:../../../../platform/kb-labs-core/packages/core-registry
       '@kb-labs/core-runtime':
         specifier: link:../../../../platform/kb-labs-core/packages/core-runtime
         version: link:../../../../platform/kb-labs-core/packages/core-runtime
@@ -2041,8 +2146,8 @@ importers:
         specifier: ^5.2.0
         version: 5.8.4
       fastify-type-provider-zod:
-        specifier: ^4.0.2
-        version: 4.0.2(fastify@5.8.4)(zod@4.3.6)
+        specifier: ^6.0.0
+        version: 6.1.0(@fastify/swagger@9.7.0)(fastify@5.8.4)(openapi-types@12.1.3)(zod@4.3.6)
       ws:
         specifier: ^8.18.3
         version: 8.20.0
@@ -2982,6 +3087,43 @@ packages:
     resolution: {integrity: sha512-9I2Zn6+NJLfaGoz9jN3lpwDgAYvfGeNYdbAIjJOqzs4Tpc+VU3Jqq4IofSUBKajiDS8k9fZIg18/z13mpk1bsA==}
     engines: {node: '>=8'}
 
+  '@module-federation/dts-plugin@2.3.1':
+    resolution: {integrity: sha512-6BJvu+dLDtW/ngpyuOLgpKOgtOnMUTZY51JUyargVckerKRbe7Ul+414YaHj32mu2FpsiHVMl4ig1XnxgnRg2Q==}
+    peerDependencies:
+      typescript: ^4.9.0 || ^5.0.0
+      vue-tsc: '>=1.0.24'
+    peerDependenciesMeta:
+      vue-tsc:
+        optional: true
+
+  '@module-federation/error-codes@2.3.1':
+    resolution: {integrity: sha512-s3IjT2OYrSBNNmxdTmmrWBpsFfeNszdL6BSqjXLHb1CgXWUYLNXpb05IopnzMhRLcur6MTGuKR0ZSjJbmvQBbg==}
+
+  '@module-federation/managers@2.3.1':
+    resolution: {integrity: sha512-kK/4FkoaIxbJbN+R6+cq+igv095hPox8oheZOKkrYA9P6Xv5FiHza+gHlCntiWTMrU8bzqJHH4VYm6gq1RB+dQ==}
+
+  '@module-federation/runtime-core@2.3.1':
+    resolution: {integrity: sha512-E0WgaCn32AWzD0n6SCH7VQ+kxk46XyX432PQWARgyQzCX/wyLkaT+We3A18RVNUevRT85YHLrrVIhMKJJVHgjA==}
+
+  '@module-federation/runtime@2.3.1':
+    resolution: {integrity: sha512-NiKelHKzOf1Vz8oqcxC/XRUAW224O6lKj9xD0cfp5Bp343iu6s58RlLvX1ypF+UpCl3jA4JM8npGax/3jjyifw==}
+
+  '@module-federation/sdk@2.3.1':
+    resolution: {integrity: sha512-lgWxFZyLRKDXWRGlV6ROjFJ6MRaJTxs0bBnS6hS9ONfr/0TkeW4JzDbsfzrB8g4p6IgSKB+wQ9XfibJCGBI5OQ==}
+    peerDependencies:
+      node-fetch: ^3.3.2
+    peerDependenciesMeta:
+      node-fetch:
+        optional: true
+
+  '@module-federation/third-party-dts-extractor@2.3.1':
+    resolution: {integrity: sha512-YpTLzM7H9damh31JX7eFBiCCR1mbibzS4i4JEa4fZ5ICT4hfNIuaAx1OeICGDOzSdl35TYegegCjk91oX6xCJQ==}
+
+  '@module-federation/vite@1.13.7':
+    resolution: {integrity: sha512-dFWL7isa1ddSGvHD3v/6J/kO8a+pPHe9hH3huIKtykpaVCJPgU8JRnlRz0cZBx83MxHNZhXbU7FOF438QpMW2Q==}
+    peerDependencies:
+      vite: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
+
   '@naoak/workerize-transferable@0.1.0':
     resolution: {integrity: sha512-fDLfuP71IPNP5+zSfxFb52OHgtjZvauRJWbVnpzQ7G7BjcbLjTny0OW1d3ZO806XKpLWNKmeeW3MhE0sy8iwYQ==}
     peerDependencies:
@@ -3112,41 +3254,17 @@ packages:
       react: '>=17'
       react-dom: '>=17'
 
-  '@redis/bloom@5.11.0':
-    resolution: {integrity: sha512-KYiVilAhAFN3057afUb/tfYJpsEyTkQB+tQcn5gVVA7DgcNOAj8lLxe4j8ov8BF6I9C1Fe/kwlbuAICcTMX8Lw==}
-    engines: {node: '>= 18'}
-    peerDependencies:
-      '@redis/client': ^5.11.0
-
-  '@redis/client@5.11.0':
-    resolution: {integrity: sha512-GHoprlNQD51Xq2Ztd94HHV94MdFZQ3CVrpA04Fz8MVoHM0B7SlbmPEVIjwTbcv58z8QyjnrOuikS0rWF03k5dQ==}
-    engines: {node: '>= 18'}
-    peerDependencies:
-      '@node-rs/xxhash': ^1.1.0
-    peerDependenciesMeta:
-      '@node-rs/xxhash':
-        optional: true
-
-  '@redis/json@5.11.0':
-    resolution: {integrity: sha512-1iAy9kAtcD0quB21RbPTbUqqy+T2Uu2JxucwE+B4A+VaDbIRvpZR6DMqV8Iqaws2YxJYB3GC5JVNzPYio2ErUg==}
-    engines: {node: '>= 18'}
-    peerDependencies:
-      '@redis/client': ^5.11.0
-
-  '@redis/search@5.11.0':
-    resolution: {integrity: sha512-g1l7f3Rnyk/xI99oGHIgWHSKFl45Re5YTIcO8j/JE8olz389yUFyz2+A6nqVy/Zi031VgPDWscbbgOk8hlhZ3g==}
-    engines: {node: '>= 18'}
-    peerDependencies:
-      '@redis/client': ^5.11.0
-
-  '@redis/time-series@5.11.0':
-    resolution: {integrity: sha512-TWFeOcU4xkj0DkndnOyhtxvX1KWD+78UHT3XX3x3XRBUGWeQrKo3jqzDsZwxbggUgf9yLJr/akFHXru66X5UQA==}
-    engines: {node: '>= 18'}
-    peerDependencies:
-      '@redis/client': ^5.11.0
-
   '@rolldown/pluginutils@1.0.0-beta.27':
     resolution: {integrity: sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==}
+
+  '@rollup/pluginutils@5.3.0':
+    resolution: {integrity: sha512-5EdhGZtnu3V88ces7s53hhfK5KSASnJZv8Lulpc04cWO3REESroJXg73DFsOmgbU2BhwV0E20bu2IDZb3VKW4Q==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
 
   '@rollup/rollup-android-arm-eabi@4.60.0':
     resolution: {integrity: sha512-WOhNW9K8bR3kf4zLxbfg6Pxu2ybOUbB2AjMDHSQx86LIF4rH4Ft7vmMwNt0loO0eonglSNy4cpD3MKXXKQu0/A==}
@@ -3490,9 +3608,6 @@ packages:
   '@types/react@18.3.28':
     resolution: {integrity: sha512-z9VXpC7MWrhfWipitjNdgCauoMLRdIILQsAEV+ZesIzBq/oUlxk0m3ApZuMFCXdnS4U7KrI+l3WRUEGQ8K1QKw==}
 
-  '@types/semver@7.7.1':
-    resolution: {integrity: sha512-FmgJfu+MOcQ370SD0ev7EI8TlCAfKYU+B4m5T3yXc1CiRN94g/SZPtsCkk506aUDtlMnFZvasDwHHUcZUEaYuA==}
-
   '@types/stylis@4.2.7':
     resolution: {integrity: sha512-VgDNokpBoKF+wrdvhAAfS55OMQpL6QRglwTwNC3kIgBrzZxA4WsFj+2eLfEA/uMUDzBcEhYmjSbwQakn/i3ajA==}
 
@@ -3786,6 +3901,10 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  adm-zip@0.5.17:
+    resolution: {integrity: sha512-+Ut8d9LLqwEvHHJl1+PIHqoyDxFgVN847JTVM3Izi3xHDWPE4UtzzXysMZQs64DMcrJfBeS/uoEP4AD3HQHnQQ==}
+    engines: {node: '>=12.0'}
+
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
@@ -3816,6 +3935,10 @@ packages:
 
   ajv@8.18.0:
     resolution: {integrity: sha512-PlXPeEWMXMZ7sPYOHqmDyCJzcfNrUr3fGNKtezX14ykXOEIvyK81d+qydx89KY5O71FKMPaQ2vBfBFI5NHR63A==}
+
+  ansi-colors@4.1.3:
+    resolution: {integrity: sha512-/6w/C21Pm1A7aZitlI5Ni/2J6FFQN8i1Cvz3kHABAAbw93v/NlvKdVOqz7CCWz/3iv/JplRSEEZ83XION15ovw==}
+    engines: {node: '>=6'}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -3904,6 +4027,10 @@ packages:
   asynckit@0.4.0:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
 
+  at-least-node@1.0.0:
+    resolution: {integrity: sha512-+q/t7Ekv1EDY2l6Gda6LLiX14rU9TV20Wa3ofeQmwPFZbOMo9DXrLbOjFaaclkXKWidIaopwAObQDqwWtGUjqg==}
+    engines: {node: '>= 4.0.0'}
+
   atomic-sleep@1.0.0:
     resolution: {integrity: sha512-kNOjDqAh7px0XWNI+4QbzoiR/nTkHAWNud2uvnJquD1/x5a7EQZMJT0AczqK0Qn67oY/TTQ1LbUKajZpp3I9tQ==}
     engines: {node: '>=8.0.0'}
@@ -3925,6 +4052,9 @@ packages:
   axe-core@4.11.1:
     resolution: {integrity: sha512-BASOg+YwO2C+346x3LZOeoovTIoTrRqEsqMa6fmfAV0P+U9mFr9NsyOEpiYvFjbc64NMrSswhV50WdXzdb/Z5A==}
     engines: {node: '>=4'}
+
+  axios@1.13.5:
+    resolution: {integrity: sha512-cz4ur7Vb0xS4/KUN0tPWe44eqxrIu31me+fbang3ijiNscE129POzipJJA6zniq2C/Z6sJCjMimjS8Lc/GAs8Q==}
 
   axios@1.13.6:
     resolution: {integrity: sha512-ChTCHMouEe2kn713WHbQGcuYrr6fXTBiu460OTwWrWob16g1bXn4vtz07Ope7ewMozJAnEquLk5lWQWtBig9DQ==}
@@ -4084,10 +4214,6 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
-  cluster-key-slot@1.1.2:
-    resolution: {integrity: sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==}
-    engines: {node: '>=0.10.0'}
-
   color-convert@2.0.1:
     resolution: {integrity: sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==}
     engines: {node: '>=7.0.0'}
@@ -4148,6 +4274,10 @@ packages:
 
   core-js-compat@3.49.0:
     resolution: {integrity: sha512-VQXt1jr9cBz03b331DFDCCP90b3fanciLkgiOoy8SBHy06gNf+vQ1A3WFLqG7I8TipYIKeYK9wxd0tUrvHcOZA==}
+
+  cron-parser@4.9.0:
+    resolution: {integrity: sha512-p0SaNjrHOnQeR8/VnfGbmg9te2kfyYSQ7Sc/j/6DtPL3JQvKxmjO9TSjNFpujqV3vEYYBvNNvXSxzyksBWAx1Q==}
+    engines: {node: '>=12.0.0'}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -4366,6 +4496,9 @@ packages:
   define-properties@1.2.1:
     resolution: {integrity: sha512-8QmQKqEASLd5nx0U1B1okLElbUuuttJ/AnYmRXbbbGDWh6uS208EjD4Xqq/I9wK7u0v6O08XhTWnt5XtEbR6Dg==}
     engines: {node: '>= 0.4'}
+
+  defu@6.1.4:
+    resolution: {integrity: sha512-mEQCMmwJu317oSz8CwdIOdwf3xMif1ttiM8LTufzc3g6kR+9Pe236twL8j3IYT1F7GfRgGcW6MWxzZjLIkuHIg==}
 
   delayed-stream@1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
@@ -4648,6 +4781,9 @@ packages:
     resolution: {integrity: sha512-MMdARuVEQziNTeJD8DgMqmhwR11BRQ/cBP+pLtYdSTnf3MIO8fFeiINEbX36ZdNlfU/7A9f3gUw49B3oQsvwBA==}
     engines: {node: '>=4.0'}
 
+  estree-walker@2.0.2:
+    resolution: {integrity: sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==}
+
   estree-walker@3.0.3:
     resolution: {integrity: sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==}
 
@@ -4665,6 +4801,10 @@ packages:
   execa@8.0.1:
     resolution: {integrity: sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg==}
     engines: {node: '>=16.17'}
+
+  expand-tilde@2.0.2:
+    resolution: {integrity: sha512-A5EmesHW6rfnZ9ysHQjPdJRni0SRar0tjtG5MNtm9n5TUvsYU8oozprtRD4AqHxcZWWlVuAmQo2nWKfN9oyjTw==}
+    engines: {node: '>=0.10.0'}
 
   expect-type@1.3.0:
     resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
@@ -4704,11 +4844,13 @@ packages:
   fastify-plugin@5.1.0:
     resolution: {integrity: sha512-FAIDA8eovSt5qcDgcBvDuX/v0Cjz0ohGhENZ/wpc3y+oZCY2afZ9Baqql3g/lC+OHRnciQol4ww7tuthOb9idw==}
 
-  fastify-type-provider-zod@4.0.2:
-    resolution: {integrity: sha512-FDRzSL3ZuoZ+4YDevR1YOinmDKkxOdy3QB9dDR845sK+bQvDroPKhHAXLEAOObDxL7SMA0OZN/A4osrNBTdDTQ==}
+  fastify-type-provider-zod@6.1.0:
+    resolution: {integrity: sha512-Sl19VZFSX4W/+AFl3hkL5YgWk3eDXZ4XYOdrq94HunK+o7GQBCAqgk7+3gPXoWkF0bNxOiIgfnFGJJ3i9a2BtQ==}
     peerDependencies:
-      fastify: ^5.0.0
-      zod: ^3.14.2
+      '@fastify/swagger': '>=9.5.1'
+      fastify: ^5.5.0
+      openapi-types: ^12.1.3
+      zod: '>=4.1.5'
 
   fastify@5.8.4:
     resolution: {integrity: sha512-sa42J1xylbBAYUWALSBoyXKPDUvM3OoNOibIefA+Oha57FryXKKCZarA1iDntOCWp3O35voZLuDg2mdODXtPzQ==}
@@ -4739,9 +4881,17 @@ packages:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
     engines: {node: '>=8'}
 
+  find-file-up@2.0.1:
+    resolution: {integrity: sha512-qVdaUhYO39zmh28/JLQM5CoYN9byEOKEH4qfa8K1eNV17W0UUMJ9WgbR/hHFH+t5rcl+6RTb5UC7ck/I+uRkpQ==}
+    engines: {node: '>=8'}
+
   find-my-way@9.5.0:
     resolution: {integrity: sha512-VW2RfnmscZO5KgBY5XVyKREMW5nMZcxDy+buTOsL+zIPnBlbKm+00sgzoQzq1EVh4aALZLfKdwv6atBGcjvjrQ==}
     engines: {node: '>=20'}
+
+  find-pkg@2.0.0:
+    resolution: {integrity: sha512-WgZ+nKbELDa6N3i/9nrHeNznm+lY3z4YfhDDWgW+5P0pdmMj26bxaxU11ookgY3NyP9GC7HvZ9etp0jRFqGEeQ==}
+    engines: {node: '>=8'}
 
   find-up-simple@1.0.1:
     resolution: {integrity: sha512-afd4O7zpqHeRyg4PfDQsXmlDe2PfdHtJt6Akt8jOWaApLOZk5JXs6VMR29lz03pRe9mpykrRCYIYxaJYcfpncQ==}
@@ -4788,6 +4938,10 @@ packages:
 
   fraction.js@5.3.4:
     resolution: {integrity: sha512-1X1NTtiJphryn/uLQz3whtY6jK3fTqoE3ohKs0tT+Ujr1W59oopxmoEh7Lu5p6vBaPbgoM0bzveAW4Qi5RyWDQ==}
+
+  fs-extra@9.1.0:
+    resolution: {integrity: sha512-hcg3ZmepS30/7BSFqRvoo3DOMQu7IjqxO5nCDt+zM9XWjb33Wg7ziNT+Qvqbuc3+gWpzO02JubVyk2G4Zvo1OQ==}
+    engines: {node: '>=10'}
 
   fsevents@2.3.2:
     resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
@@ -4868,6 +5022,14 @@ packages:
     resolution: {integrity: sha512-Wjlyrolmm8uDpm/ogGyXZXb1Z+Ca2B8NbJwqBVg0axK9GbBeoS7yGV6vjXnYdGm6X53iehEuxxbyiKp8QmN4Vw==}
     engines: {node: 18 || 20 || >=22}
 
+  global-modules@1.0.0:
+    resolution: {integrity: sha512-sKzpEkf11GpOFuw0Zzjzmt4B4UZwjOcG757PPvrfhxcLFbq0wpsgpOqxpxtxFiCG4DtG93M6XRVbF2oGdev7bg==}
+    engines: {node: '>=0.10.0'}
+
+  global-prefix@1.0.2:
+    resolution: {integrity: sha512-5lsx1NUDHtSjfg0eHlmYvZKv8/nVqX4ckFbM+FrGcQ+04KWcWFo9P5MxPZYSzUvyzmdTbI7Eix8Q4IbELDqzKg==}
+    engines: {node: '>=0.10.0'}
+
   globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
     engines: {node: '>=18'}
@@ -4916,6 +5078,10 @@ packages:
   hasown@2.0.2:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
+
+  homedir-polyfill@1.0.3:
+    resolution: {integrity: sha512-eSmmWE5bZTK2Nou4g0AI3zZ9rswp7GRKoKXS1BLUkvPviOqs4YTN1djQIqrXy9k5gEtdLPy86JjRwsNM9tnDcA==}
+    engines: {node: '>=0.10.0'}
 
   html-encoding-sniffer@4.0.0:
     resolution: {integrity: sha512-Y22oTqIU4uuPgEemfz7NDJz6OeKf12Lsu+QC+s3BVpda64lTiMYCyGwg5ki4vFxkMwQdeZDl2adZoqUgdFuTgQ==}
@@ -4978,6 +5144,9 @@ packages:
 
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
+
+  ini@1.3.8:
+    resolution: {integrity: sha512-JV/yugV2uzW5iMRSiZAyDtQd+nxtUnjeLt0acNdw98kKLrvuRVyB80tsREOE7yvGVgalhZ6RNXCmEHkUKBKxew==}
 
   internal-slot@1.1.0:
     resolution: {integrity: sha512-4gd7VpWNQNB4UKKCFFVcp1AVv+FMOgs9NKzjHKusc8jTMhd5eL1NqQqOpE0KzMds804/yHlglp3uxgluOqAPLw==}
@@ -5119,11 +5288,20 @@ packages:
     resolution: {integrity: sha512-mfcwb6IzQyOKTs84CQMrOwW4gQcaTOAWJ0zzJCl2WSPDrWk/OzDaImWFH3djXhb24g4eudZfLRozAvPGw4d9hQ==}
     engines: {node: '>= 0.4'}
 
+  is-windows@1.0.2:
+    resolution: {integrity: sha512-eXK1UInq2bPmjyX6e3VHIzMLobc4J94i4AWn+Hpq3OU5KkrRC96OAcR3PRJ/pGu6m8TRnBHP9dkXQVsT/COVIA==}
+    engines: {node: '>=0.10.0'}
+
   isarray@2.0.5:
     resolution: {integrity: sha512-xHjhDr3cNBK0BzdUJSPXZntQUx/mwMS5Rw4A7lPJ90XGAO6ISP/ePDNuo0vhqOZU+UD5JoodwCAAoZQd3FeAKw==}
 
   isexe@2.0.0:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
+
+  isomorphic-ws@5.0.0:
+    resolution: {integrity: sha512-muId7Zzn9ywDsyXgTIafTry2sV3nySZeUDe6YedVd1Hvuuep5AsIlqK+XefWpYTyJG5e503F2xIuT2lcU6rCSw==}
+    peerDependencies:
+      ws: '*'
 
   istanbul-lib-coverage@3.2.2:
     resolution: {integrity: sha512-O8dpsF+r0WV/8MNRKfnmrtCWhuKjxrq2w+jpzBL5UZKTi2LeVWnWOmWRxFlesJONmc+wLAGvKQZEOanko0LFTg==}
@@ -5237,6 +5415,9 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
+  jsonfile@6.2.0:
+    resolution: {integrity: sha512-FGuPw30AdOIUTRMC2OMRtQV+jkVj2cfPqSeWXv1NEAJ1qZ5zb1X6z1mFhbfOB/iy3ssJCD+3KuZ8r8C3uVFlAg==}
+
   jsx-ast-utils-x@0.1.0:
     resolution: {integrity: sha512-eQQBjBnsVtGacsG9uJNB8qOr3yA8rga4wAaGG1qRcBzSIvfhERLrWxMAM1hp5fcS6Abo8M4+bUBTekYR0qTPQw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -5291,6 +5472,9 @@ packages:
   lodash@4.17.23:
     resolution: {integrity: sha512-LgVTMpQtIopCi79SJeDiP0TfWi5CNEc/L/aRdTh3yIvmZXTnheWpKjSZhnvMl8iXbC1tFg9gdHHDMLoV7CnG+w==}
 
+  long-timeout@0.1.1:
+    resolution: {integrity: sha512-BFRuQUqc7x2NWxfJBCyUrN8iYUYznzL9JROmRz1gZ6KlOIgmoD+njPVbb+VNn2nGMKggMsK79iUNErillsrx7w==}
+
   loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
@@ -5312,6 +5496,10 @@ packages:
     resolution: {integrity: sha512-6koYRhnM2N0GGZIdXzSeiNwguv1gt/FAjZOiPl76roBi3xKEXa4WmfpxgQwTTL4KipXjefrnf3oV4IsYhi4JFA==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0-rc
+
+  luxon@3.7.2:
+    resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
+    engines: {node: '>=12'}
 
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
@@ -5440,6 +5628,10 @@ packages:
   node-releases@2.0.36:
     resolution: {integrity: sha512-TdC8FSgHz8Mwtw9g5L4gR/Sh9XhSP/0DEkQxfEFXOpiul5IiHgHan2VhYYb6agDSfp4KuvltmGApc8HMgUrIkA==}
 
+  node-schedule@2.1.1:
+    resolution: {integrity: sha512-OXdegQq03OmXEjt2hZP33W2YPs/E5BcFQks46+G2gAxs4gHOIVD1u7EqlYLYSKsaIpyKCK9Gbk0ta1/gjRSMRQ==}
+    engines: {node: '>=6'}
+
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
@@ -5525,6 +5717,10 @@ packages:
   parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
     engines: {node: '>=6'}
+
+  parse-passwd@1.0.0:
+    resolution: {integrity: sha512-1Y1A//QUXEZK7YKz+rD9WydcE1+EuPr6ZBgKecAB8tmoW6UFv0NREVJe1p+jRxtThkcbbKkfwIbWJe/IeE6m2Q==}
+    engines: {node: '>=0.10.0'}
 
   parse5@7.3.0:
     resolution: {integrity: sha512-IInvU7fabl34qmi9gY8XOVxhYyMyuH2xUNpb2q8/Y+7552KlejkRvqvD19nMoUW/uQGGbqNpA6Tufu5FL5BZgw==}
@@ -6028,10 +6224,6 @@ packages:
     resolution: {integrity: sha512-6tDA8g98We0zd0GvVeMT9arEOnTw9qM03L9cJXaCjrip1OO764RDBLBfrB4cwzNGDj5OA5ioymC9GkizgWJDUg==}
     engines: {node: '>=8'}
 
-  redis@5.11.0:
-    resolution: {integrity: sha512-YwXjATVDT+AuxcyfOwZn046aml9jMlQPvU1VXIlLDVAExe0u93aTfPYSeRgG4p9Q/Jlkj+LXJ1XEoFV+j2JKcQ==}
-    engines: {node: '>= 18'}
-
   refa@0.12.1:
     resolution: {integrity: sha512-J8rn6v4DBb2nnFqkqwy6/NnTYMcgLA+sLr0iIO41qpv0n+ngb7ksag2tMRl0inb1bbO/esUwzW1vbJi7K0sI0g==}
     engines: {node: ^12.0.0 || ^14.0.0 || >=16.0.0}
@@ -6066,6 +6258,10 @@ packages:
   resize-observer-polyfill@1.5.1:
     resolution: {integrity: sha512-LwZrotdHOo12nQuZlHEmtuXdqGoOD0OhaxopaNFxWzInpEgaLWoVuAMbTzixuosCx2nEG58ngzW3vxdWoxIgdg==}
 
+  resolve-dir@1.0.1:
+    resolution: {integrity: sha512-R7uiTjECzvOsWSfdM0QKFNBVFcK27aHOUwdvK53BcW8zqnGdYp0Fbj82cy54+2A4P2tFM22J5kRfe1R+lM/1yg==}
+    engines: {node: '>=0.10.0'}
+
   resolve-from@4.0.0:
     resolution: {integrity: sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g==}
     engines: {node: '>=4'}
@@ -6080,6 +6276,10 @@ packages:
   resolve@1.22.11:
     resolution: {integrity: sha512-RfqAvLnMl313r7c9oclB1HhUEAezcpLjz95wFH4LVuhk9JF/r22qmVP9AMmOU4vMX7Q8pN8jwNg/CSpdFnMjTQ==}
     engines: {node: '>= 0.4'}
+    hasBin: true
+
+  resolve@1.22.8:
+    resolution: {integrity: sha512-oKWePCxqpd6FlLvGV1VU0x7bkPmmCNolxzjMf4NczoDnQcIWrAF+cPtZn5i6n+RfD2d9i0tzpKnG6Yk168yIyw==}
     hasBin: true
 
   ret@0.5.0:
@@ -6232,6 +6432,9 @@ packages:
 
   sonic-boom@4.2.1:
     resolution: {integrity: sha512-w6AxtubXa2wTXAUsZMMWERrsIRAdrK0Sc+FUytWvYAhBJLyuI4llrMIC1DtlNSdI99EI86KZum2MMq3EAZlF9Q==}
+
+  sorted-array-functions@1.3.0:
+    resolution: {integrity: sha512-2sqgzeFlid6N4Z2fUQ1cvFmTOLRi/sEDzSQ0OKYchqgoPmQBVyM3959qYx3fpS6Esef80KjmpgPeEr028dP3OA==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -6584,6 +6787,10 @@ packages:
     resolution: {integrity: sha512-CJ1QgKmNg3CwvAv/kOFmtnEN05f0D/cn9QntgNOQlQF9dgvVTHj3t+8JPdjqawCHk7V/KA+fbUqzZ9XWhcqPUg==}
     engines: {node: '>= 4.0.0'}
 
+  universalify@2.0.1:
+    resolution: {integrity: sha512-gptHNQghINnc/vTGIk0SOFGFNXw7JVrlRUtConJRlvaw6DuX0wO5Jeko9sWrMBhh+PsYAZ7oXAiOnf/UKogyiw==}
+    engines: {node: '>= 10.0.0'}
+
   unrs-resolver@1.11.1:
     resolution: {integrity: sha512-bSjt9pjaEBnNiGgc9rUiHGKv5l4/TGzDmYw3RhnkJGtLhbnnA/5qJj7x3dNDCRx/PJxu774LlH8lCOlB4hEfKg==}
 
@@ -6756,6 +6963,10 @@ packages:
     resolution: {integrity: sha512-LYfpUkmqwl0h9A2HL09Mms427Q1RZWuOHsukfVcKRq9q95iQxdw0ix1JQrqbcDR9PH1QDwf5Qo8OZb5lksZ8Xg==}
     engines: {node: '>= 0.4'}
 
+  which@1.3.1:
+    resolution: {integrity: sha512-HxJdYWq1MTIQbJ3nw0cqssHoTNU267KlrDuGZ1WYlxDStUtKUhOaJmh112/TZmHxxUfuJqPXSOm7tDyas0OSIQ==}
+    hasBin: true
+
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
     engines: {node: '>= 8'}
@@ -6785,6 +6996,18 @@ packages:
 
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
+
+  ws@8.18.0:
+    resolution: {integrity: sha512-8VbfWfHLbbwu3+N6OKsOMpBdT4kXPDDB9cJk2bJ6mh9ucxdlnNvH1e+roYkKmN9Nxw2yjz7VzeO9oOz2zJ04Pw==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
 
   ws@8.20.0:
     resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
@@ -6890,9 +7113,9 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@ant-design/charts@2.6.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))':
+  '@ant-design/charts@2.6.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4))':
     dependencies:
-      '@ant-design/graphs': 2.1.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))
+      '@ant-design/graphs': 2.1.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4))
       '@ant-design/plots': 2.6.8(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       lodash: 4.17.23
       react: 18.3.1
@@ -6928,12 +7151,12 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.2
 
-  '@ant-design/graphs@2.1.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))':
+  '@ant-design/graphs@2.1.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4))':
     dependencies:
       '@ant-design/charts-util': 0.0.1-alpha.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@antv/g6': 5.0.51(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))
-      '@antv/g6-extension-react': 0.2.6(@antv/g6@5.0.51(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4))))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@antv/graphin': 3.0.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))
+      '@antv/g6': 5.0.51(workerize-loader@2.0.2(webpack@5.105.4))
+      '@antv/g6-extension-react': 0.2.6(@antv/g6@5.0.51(workerize-loader@2.0.2(webpack@5.105.4)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@antv/graphin': 3.0.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4))
       lodash: 4.17.23
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
@@ -7057,15 +7280,15 @@ snapshots:
       flru: 1.0.2
       pdfast: 0.2.0
 
-  '@antv/g6-extension-react@0.2.6(@antv/g6@5.0.51(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4))))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@antv/g6-extension-react@0.2.6(@antv/g6@5.0.51(workerize-loader@2.0.2(webpack@5.105.4)))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@antv/g': 6.3.1
       '@antv/g-svg': 2.1.1
-      '@antv/g6': 5.0.51(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))
+      '@antv/g6': 5.0.51(workerize-loader@2.0.2(webpack@5.105.4))
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@antv/g6@5.0.51(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))':
+  '@antv/g6@5.0.51(workerize-loader@2.0.2(webpack@5.105.4))':
     dependencies:
       '@antv/algorithm': 0.1.26
       '@antv/component': 2.1.11
@@ -7075,7 +7298,7 @@ snapshots:
       '@antv/g-plugin-dragndrop': 2.1.1
       '@antv/graphlib': 2.0.4
       '@antv/hierarchy': 0.7.1
-      '@antv/layout': 1.2.14-beta.9(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))
+      '@antv/layout': 1.2.14-beta.9(workerize-loader@2.0.2(webpack@5.105.4))
       '@antv/util': 3.3.11
       bubblesets-js: 2.3.4
     transitivePeerDependencies:
@@ -7089,9 +7312,9 @@ snapshots:
       gl-matrix: 3.4.4
       html2canvas: 1.4.1
 
-  '@antv/graphin@3.0.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))':
+  '@antv/graphin@3.0.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(workerize-loader@2.0.2(webpack@5.105.4))':
     dependencies:
-      '@antv/g6': 5.0.51(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))
+      '@antv/g6': 5.0.51(workerize-loader@2.0.2(webpack@5.105.4))
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
     transitivePeerDependencies:
@@ -7103,12 +7326,12 @@ snapshots:
 
   '@antv/hierarchy@0.7.1': {}
 
-  '@antv/layout@1.2.14-beta.9(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))':
+  '@antv/layout@1.2.14-beta.9(workerize-loader@2.0.2(webpack@5.105.4))':
     dependencies:
       '@antv/event-emitter': 0.1.3
       '@antv/graphlib': 2.0.4
       '@antv/util': 3.3.11
-      '@naoak/workerize-transferable': 0.1.0(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))
+      '@naoak/workerize-transferable': 0.1.0(workerize-loader@2.0.2(webpack@5.105.4))
       comlink: 4.4.2
       d3-force: 3.0.0
       d3-force-3d: 3.0.6
@@ -7760,9 +7983,104 @@ snapshots:
 
   '@lukeed/ms@2.0.2': {}
 
-  '@naoak/workerize-transferable@0.1.0(workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)))':
+  '@module-federation/dts-plugin@2.3.1(typescript@5.9.3)':
     dependencies:
-      workerize-loader: 2.0.2(webpack@5.105.4(esbuild@0.27.4))
+      '@module-federation/error-codes': 2.3.1
+      '@module-federation/managers': 2.3.1
+      '@module-federation/sdk': 2.3.1
+      '@module-federation/third-party-dts-extractor': 2.3.1
+      adm-zip: 0.5.17
+      ansi-colors: 4.1.3
+      axios: 1.13.5
+      fs-extra: 9.1.0
+      isomorphic-ws: 5.0.0(ws@8.18.0)
+      node-schedule: 2.1.1
+      typescript: 5.9.3
+      ws: 8.18.0
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - node-fetch
+      - utf-8-validate
+
+  '@module-federation/error-codes@2.3.1': {}
+
+  '@module-federation/managers@2.3.1':
+    dependencies:
+      '@module-federation/sdk': 2.3.1
+      find-pkg: 2.0.0
+      fs-extra: 9.1.0
+    transitivePeerDependencies:
+      - node-fetch
+
+  '@module-federation/runtime-core@2.3.1':
+    dependencies:
+      '@module-federation/error-codes': 2.3.1
+      '@module-federation/sdk': 2.3.1
+    transitivePeerDependencies:
+      - node-fetch
+
+  '@module-federation/runtime@2.3.1':
+    dependencies:
+      '@module-federation/error-codes': 2.3.1
+      '@module-federation/runtime-core': 2.3.1
+      '@module-federation/sdk': 2.3.1
+    transitivePeerDependencies:
+      - node-fetch
+
+  '@module-federation/sdk@2.3.1': {}
+
+  '@module-federation/third-party-dts-extractor@2.3.1':
+    dependencies:
+      find-pkg: 2.0.0
+      fs-extra: 9.1.0
+      resolve: 1.22.8
+
+  '@module-federation/vite@1.13.7(rollup@4.60.0)(typescript@5.9.3)(vite@6.4.1(@types/node@22.19.15)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))':
+    dependencies:
+      '@module-federation/dts-plugin': 2.3.1(typescript@5.9.3)
+      '@module-federation/runtime': 2.3.1
+      '@module-federation/sdk': 2.3.1
+      '@rollup/pluginutils': 5.3.0(rollup@4.60.0)
+      defu: 6.1.4
+      es-module-lexer: 2.0.0
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+      pathe: 2.0.3
+      vite: 6.4.1(@types/node@22.19.15)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - node-fetch
+      - rollup
+      - typescript
+      - utf-8-validate
+      - vue-tsc
+
+  '@module-federation/vite@1.13.7(rollup@4.60.0)(typescript@5.9.3)(vite@6.4.1(@types/node@24.12.0)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))':
+    dependencies:
+      '@module-federation/dts-plugin': 2.3.1(typescript@5.9.3)
+      '@module-federation/runtime': 2.3.1
+      '@module-federation/sdk': 2.3.1
+      '@rollup/pluginutils': 5.3.0(rollup@4.60.0)
+      defu: 6.1.4
+      es-module-lexer: 2.0.0
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+      pathe: 2.0.3
+      vite: 6.4.1(@types/node@24.12.0)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - node-fetch
+      - rollup
+      - typescript
+      - utf-8-validate
+      - vue-tsc
+
+  '@naoak/workerize-transferable@0.1.0(workerize-loader@2.0.2(webpack@5.105.4))':
+    dependencies:
+      workerize-loader: 2.0.2(webpack@5.105.4)
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
@@ -7941,27 +8259,15 @@ snapshots:
       - '@types/react'
       - immer
 
-  '@redis/bloom@5.11.0(@redis/client@5.11.0)':
-    dependencies:
-      '@redis/client': 5.11.0
-
-  '@redis/client@5.11.0':
-    dependencies:
-      cluster-key-slot: 1.1.2
-
-  '@redis/json@5.11.0(@redis/client@5.11.0)':
-    dependencies:
-      '@redis/client': 5.11.0
-
-  '@redis/search@5.11.0(@redis/client@5.11.0)':
-    dependencies:
-      '@redis/client': 5.11.0
-
-  '@redis/time-series@5.11.0(@redis/client@5.11.0)':
-    dependencies:
-      '@redis/client': 5.11.0
-
   '@rolldown/pluginutils@1.0.0-beta.27': {}
+
+  '@rollup/pluginutils@5.3.0(rollup@4.60.0)':
+    dependencies:
+      '@types/estree': 1.0.8
+      estree-walker: 2.0.2
+      picomatch: 4.0.4
+    optionalDependencies:
+      rollup: 4.60.0
 
   '@rollup/rollup-android-arm-eabi@4.60.0':
     optional: true
@@ -8294,8 +8600,6 @@ snapshots:
       '@types/prop-types': 15.7.15
       csstype: 3.2.3
 
-  '@types/semver@7.7.1': {}
-
   '@types/stylis@4.2.7': {}
 
   '@types/trusted-types@2.0.7':
@@ -8506,6 +8810,22 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 2.0.0
 
+  '@vitest/mocker@3.2.4(vite@6.4.1(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))':
+    dependencies:
+      '@vitest/spy': 3.2.4
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 6.4.1(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  '@vitest/mocker@3.2.4(vite@6.4.1(@types/node@22.19.15)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))':
+    dependencies:
+      '@vitest/spy': 3.2.4
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 6.4.1(@types/node@22.19.15)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+
   '@vitest/mocker@3.2.4(vite@6.4.1(@types/node@24.12.0)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))':
     dependencies:
       '@vitest/spy': 3.2.4
@@ -8656,6 +8976,8 @@ snapshots:
 
   acorn@8.16.0: {}
 
+  adm-zip@0.5.17: {}
+
   agent-base@7.1.4: {}
 
   ajv-formats@2.1.1(ajv@8.18.0):
@@ -8685,6 +9007,8 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
+  ansi-colors@4.1.3: {}
+
   ansi-regex@5.0.1: {}
 
   ansi-regex@6.2.2: {}
@@ -8697,7 +9021,7 @@ snapshots:
 
   ansi-styles@6.2.3: {}
 
-  antd@5.29.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  antd@5.29.3(luxon@3.7.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@ant-design/colors': 7.2.1
       '@ant-design/cssinjs': 1.24.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -8729,7 +9053,7 @@ snapshots:
       rc-motion: 2.9.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       rc-notification: 5.6.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       rc-pagination: 5.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      rc-picker: 4.11.3(dayjs@1.11.20)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      rc-picker: 4.11.3(dayjs@1.11.20)(luxon@3.7.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       rc-progress: 4.0.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       rc-rate: 2.13.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       rc-resize-observer: 1.4.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -8836,6 +9160,8 @@ snapshots:
 
   asynckit@0.4.0: {}
 
+  at-least-node@1.0.0: {}
+
   atomic-sleep@1.0.0: {}
 
   autoprefixer@10.4.27(postcss@8.5.8):
@@ -8857,6 +9183,14 @@ snapshots:
       fastq: 1.20.1
 
   axe-core@4.11.1: {}
+
+  axios@1.13.5:
+    dependencies:
+      follow-redirects: 1.15.11
+      form-data: 4.0.5
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
 
   axios@1.13.6:
     dependencies:
@@ -9006,8 +9340,6 @@ snapshots:
 
   clsx@2.1.1: {}
 
-  cluster-key-slot@1.1.2: {}
-
   color-convert@2.0.1:
     dependencies:
       color-name: 1.1.4
@@ -9054,6 +9386,10 @@ snapshots:
   core-js-compat@3.49.0:
     dependencies:
       browserslist: 4.28.1
+
+  cron-parser@4.9.0:
+    dependencies:
+      luxon: 3.7.2
 
   cross-spawn@7.0.6:
     dependencies:
@@ -9273,6 +9609,8 @@ snapshots:
       define-data-property: 1.1.4
       has-property-descriptors: 1.0.2
       object-keys: 1.1.1
+
+  defu@6.1.4: {}
 
   delayed-stream@1.0.0: {}
 
@@ -9716,6 +10054,8 @@ snapshots:
 
   estraverse@5.3.0: {}
 
+  estree-walker@2.0.2: {}
+
   estree-walker@3.0.3:
     dependencies:
       '@types/estree': 1.0.8
@@ -9737,6 +10077,10 @@ snapshots:
       onetime: 6.0.0
       signal-exit: 4.1.0
       strip-final-newline: 3.0.0
+
+  expand-tilde@2.0.2:
+    dependencies:
+      homedir-polyfill: 1.0.3
 
   expect-type@1.3.0: {}
 
@@ -9777,19 +10121,13 @@ snapshots:
 
   fastify-plugin@5.1.0: {}
 
-  fastify-type-provider-zod@4.0.2(fastify@5.8.4)(zod@3.25.76):
+  fastify-type-provider-zod@6.1.0(@fastify/swagger@9.7.0)(fastify@5.8.4)(openapi-types@12.1.3)(zod@4.3.6):
     dependencies:
       '@fastify/error': 4.2.0
+      '@fastify/swagger': 9.7.0
       fastify: 5.8.4
-      zod: 3.25.76
-      zod-to-json-schema: 3.25.1(zod@3.25.76)
-
-  fastify-type-provider-zod@4.0.2(fastify@5.8.4)(zod@4.3.6):
-    dependencies:
-      '@fastify/error': 4.2.0
-      fastify: 5.8.4
+      openapi-types: 12.1.3
       zod: 4.3.6
-      zod-to-json-schema: 3.25.1(zod@4.3.6)
 
   fastify@5.8.4:
     dependencies:
@@ -9829,11 +10167,19 @@ snapshots:
     dependencies:
       to-regex-range: 5.0.1
 
+  find-file-up@2.0.1:
+    dependencies:
+      resolve-dir: 1.0.1
+
   find-my-way@9.5.0:
     dependencies:
       fast-deep-equal: 3.1.3
       fast-querystring: 1.1.2
       safe-regex2: 5.1.0
+
+  find-pkg@2.0.0:
+    dependencies:
+      find-file-up: 2.0.1
 
   find-up-simple@1.0.1: {}
 
@@ -9877,6 +10223,13 @@ snapshots:
       mime-types: 2.1.35
 
   fraction.js@5.3.4: {}
+
+  fs-extra@9.1.0:
+    dependencies:
+      at-least-node: 1.0.0
+      graceful-fs: 4.2.11
+      jsonfile: 6.2.0
+      universalify: 2.0.1
 
   fsevents@2.3.2:
     optional: true
@@ -9969,6 +10322,20 @@ snapshots:
       minipass: 7.1.3
       path-scurry: 2.0.2
 
+  global-modules@1.0.0:
+    dependencies:
+      global-prefix: 1.0.2
+      is-windows: 1.0.2
+      resolve-dir: 1.0.1
+
+  global-prefix@1.0.2:
+    dependencies:
+      expand-tilde: 2.0.2
+      homedir-polyfill: 1.0.3
+      ini: 1.3.8
+      is-windows: 1.0.2
+      which: 1.3.1
+
   globals@14.0.0: {}
 
   globals@16.5.0: {}
@@ -10007,6 +10374,10 @@ snapshots:
   hasown@2.0.2:
     dependencies:
       function-bind: 1.1.2
+
+  homedir-polyfill@1.0.3:
+    dependencies:
+      parse-passwd: 1.0.0
 
   html-encoding-sniffer@4.0.0:
     dependencies:
@@ -10069,6 +10440,8 @@ snapshots:
   indent-string@5.0.0: {}
 
   inherits@2.0.4: {}
+
+  ini@1.3.8: {}
 
   internal-slot@1.1.0:
     dependencies:
@@ -10210,9 +10583,15 @@ snapshots:
       call-bound: 1.0.4
       get-intrinsic: 1.3.0
 
+  is-windows@1.0.2: {}
+
   isarray@2.0.5: {}
 
   isexe@2.0.0: {}
+
+  isomorphic-ws@5.0.0(ws@8.18.0):
+    dependencies:
+      ws: 8.18.0
 
   istanbul-lib-coverage@3.2.2: {}
 
@@ -10359,6 +10738,12 @@ snapshots:
 
   json5@2.2.3: {}
 
+  jsonfile@6.2.0:
+    dependencies:
+      universalify: 2.0.1
+    optionalDependencies:
+      graceful-fs: 4.2.11
+
   jsx-ast-utils-x@0.1.0: {}
 
   jsx-ast-utils@3.3.5:
@@ -10411,6 +10796,8 @@ snapshots:
 
   lodash@4.17.23: {}
 
+  long-timeout@0.1.1: {}
+
   loose-envify@1.4.0:
     dependencies:
       js-tokens: 4.0.0
@@ -10428,6 +10815,8 @@ snapshots:
   lucide-react@0.468.0(react@18.3.1):
     dependencies:
       react: 18.3.1
+
+  luxon@3.7.2: {}
 
   lz-string@1.5.0: {}
 
@@ -10542,6 +10931,12 @@ snapshots:
 
   node-releases@2.0.36: {}
 
+  node-schedule@2.1.1:
+    dependencies:
+      cron-parser: 4.9.0
+      long-timeout: 0.1.1
+      sorted-array-functions: 1.3.0
+
   normalize-path@3.0.0: {}
 
   npm-run-path@5.3.0:
@@ -10633,6 +11028,8 @@ snapshots:
   parent-module@1.0.1:
     dependencies:
       callsites: 3.1.0
+
+  parse-passwd@1.0.0: {}
 
   parse5@7.3.0:
     dependencies:
@@ -10959,7 +11356,7 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  rc-picker@4.11.3(dayjs@1.11.20)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  rc-picker@4.11.3(dayjs@1.11.20)(luxon@3.7.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@babel/runtime': 7.29.2
       '@rc-component/trigger': 2.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -10971,6 +11368,7 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
     optionalDependencies:
       dayjs: 1.11.20
+      luxon: 3.7.2
 
   rc-progress@4.0.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
@@ -11222,16 +11620,6 @@ snapshots:
       indent-string: 4.0.0
       strip-indent: 3.0.0
 
-  redis@5.11.0:
-    dependencies:
-      '@redis/bloom': 5.11.0(@redis/client@5.11.0)
-      '@redis/client': 5.11.0
-      '@redis/json': 5.11.0(@redis/client@5.11.0)
-      '@redis/search': 5.11.0(@redis/client@5.11.0)
-      '@redis/time-series': 5.11.0(@redis/client@5.11.0)
-    transitivePeerDependencies:
-      - '@node-rs/xxhash'
-
   refa@0.12.1:
     dependencies:
       '@eslint-community/regexpp': 4.12.2
@@ -11273,6 +11661,11 @@ snapshots:
 
   resize-observer-polyfill@1.5.1: {}
 
+  resolve-dir@1.0.1:
+    dependencies:
+      expand-tilde: 2.0.2
+      global-modules: 1.0.0
+
   resolve-from@4.0.0: {}
 
   resolve-from@5.0.0: {}
@@ -11280,6 +11673,12 @@ snapshots:
   resolve-pkg-maps@1.0.0: {}
 
   resolve@1.22.11:
+    dependencies:
+      is-core-module: 2.16.1
+      path-parse: 1.0.7
+      supports-preserve-symlinks-flag: 1.0.0
+
+  resolve@1.22.8:
     dependencies:
       is-core-module: 2.16.1
       path-parse: 1.0.7
@@ -11477,6 +11876,8 @@ snapshots:
     dependencies:
       atomic-sleep: 1.0.0
 
+  sorted-array-functions@1.3.0: {}
+
   source-map-js@1.2.1: {}
 
   source-map-support@0.5.21:
@@ -11647,15 +12048,13 @@ snapshots:
 
   tapable@2.3.2: {}
 
-  terser-webpack-plugin@5.4.0(esbuild@0.27.4)(webpack@5.105.4(esbuild@0.27.4)):
+  terser-webpack-plugin@5.4.0(webpack@5.105.4):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.3
       terser: 5.46.1
-      webpack: 5.105.4(esbuild@0.27.4)
-    optionalDependencies:
-      esbuild: 0.27.4
+      webpack: 5.105.4
 
   terser@5.46.1:
     dependencies:
@@ -11861,6 +12260,8 @@ snapshots:
 
   universalify@0.2.0: {}
 
+  universalify@2.0.1: {}
+
   unrs-resolver@1.11.1:
     dependencies:
       napi-postinstall: 0.3.4
@@ -12025,7 +12426,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@6.4.1(@types/node@24.12.0)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
+      '@vitest/mocker': 3.2.4(vite@6.4.1(@types/node@20.19.37)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -12068,7 +12469,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@6.4.1(@types/node@24.12.0)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
+      '@vitest/mocker': 3.2.4(vite@6.4.1(@types/node@22.19.15)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -12220,7 +12621,7 @@ snapshots:
 
   webpack-sources@3.3.4: {}
 
-  webpack@5.105.4(esbuild@0.27.4):
+  webpack@5.105.4:
     dependencies:
       '@types/eslint-scope': 3.7.7
       '@types/estree': 1.0.8
@@ -12244,7 +12645,7 @@ snapshots:
       neo-async: 2.6.2
       schema-utils: 4.3.3
       tapable: 2.3.2
-      terser-webpack-plugin: 5.4.0(esbuild@0.27.4)(webpack@5.105.4(esbuild@0.27.4))
+      terser-webpack-plugin: 5.4.0(webpack@5.105.4)
       watchpack: 2.5.1
       webpack-sources: 3.3.4
     transitivePeerDependencies:
@@ -12311,6 +12712,10 @@ snapshots:
       gopd: 1.2.0
       has-tostringtag: 1.0.2
 
+  which@1.3.1:
+    dependencies:
+      isexe: 2.0.0
+
   which@2.0.2:
     dependencies:
       isexe: 2.0.0
@@ -12322,10 +12727,10 @@ snapshots:
 
   word-wrap@1.2.5: {}
 
-  workerize-loader@2.0.2(webpack@5.105.4(esbuild@0.27.4)):
+  workerize-loader@2.0.2(webpack@5.105.4):
     dependencies:
       loader-utils: 2.0.4
-      webpack: 5.105.4(esbuild@0.27.4)
+      webpack: 5.105.4
 
   wrap-ansi@7.0.0:
     dependencies:
@@ -12341,6 +12746,8 @@ snapshots:
 
   wrappy@1.0.2: {}
 
+  ws@8.18.0: {}
+
   ws@8.20.0: {}
 
   xml-name-validator@4.0.0: {}
@@ -12354,10 +12761,6 @@ snapshots:
   yaml@2.8.3: {}
 
   yocto-queue@0.1.0: {}
-
-  zod-to-json-schema@3.25.1(zod@3.25.76):
-    dependencies:
-      zod: 3.25.76
 
   zod-to-json-schema@3.25.1(zod@4.3.6):
     dependencies:

@@ -12,7 +12,10 @@ CLI / Studio / IDE
    ├── /auth/register  (public — JWT registration)
    ├── /auth/token     (public — issue JWT pair)
    ├── /auth/refresh   (public — rotate JWT pair)
-   ├── /health         (public)
+   ├── /health         (public liveness/service health)
+   ├── /metrics        (auth)
+   ├── /observability/describe (auth)
+   ├── /observability/health   (auth)
    ├── /hosts/register (public — legacy static token)
    ├── /hosts/connect  (WebSocket — Host Agent, JWT Bearer)
    ├── /api/ui/*   → REST API     :5050
@@ -47,8 +50,15 @@ pnpm gateway:dev            # dev mode with hot-reload
 
 # Check health
 curl http://localhost:4000/health
-# → { "status": "ok", "version": "1.0" }
+# → { "status": "healthy", "version": "1.0", ... }
 ```
+
+Gateway endpoint roles:
+
+- `/health` is the cheap public health surface for humans and service checks
+- `/metrics` is the Prometheus scrape surface
+- `/observability/describe` exposes the versioned contract and capabilities
+- `/observability/health` exposes structured runtime diagnostics
 
 ## Configuration
 
@@ -169,7 +179,12 @@ curl -X POST http://localhost:4000/auth/token \
 # 3. Use access token
 curl -H "Authorization: Bearer eyJ..." http://localhost:4000/health
 
-# 4. Rotate tokens (before accessToken expires)
+# 4. Read observability surfaces
+curl -H "Authorization: Bearer eyJ..." http://localhost:4000/observability/describe
+curl -H "Authorization: Bearer eyJ..." http://localhost:4000/observability/health
+curl -H "Authorization: Bearer eyJ..." http://localhost:4000/metrics
+
+# 5. Rotate tokens (before accessToken expires)
 curl -X POST http://localhost:4000/auth/refresh \
   -H "Content-Type: application/json" \
   -d '{"refreshToken":"eyJ..."}'
@@ -186,6 +201,7 @@ Token lifetimes: **accessToken = 15 min**, **refreshToken = 30 days** (rotation 
 | static (dev) | `dev-studio-token` env | Studio in local-only mode (fallback) |
 
 Public routes (no auth): `GET /health`, `POST /auth/register`, `POST /auth/token`, `POST /auth/refresh`.
+Observability routes require auth and are intended for collectors, Studio, and agent tooling.
 
 ### ICache key namespace (auth)
 

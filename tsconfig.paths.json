@@ -3,12 +3,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@kb-labs/cli-core": [
-        "../../platform/kb-labs-cli/packages/cli-core/src/index.ts"
-      ],
-      "@kb-labs/cli-core/*": [
-        "../../platform/kb-labs-cli/packages/cli-core/src/*"
-      ],
       "@kb-labs/core-config": [
         "../../platform/kb-labs-core/packages/core-config/src/index.ts"
       ],
@@ -26,6 +20,12 @@
       ],
       "@kb-labs/core-platform/*": [
         "../../platform/kb-labs-core/packages/core-platform/src/*"
+      ],
+      "@kb-labs/core-registry": [
+        "../../platform/kb-labs-core/packages/core-registry/src/index.ts"
+      ],
+      "@kb-labs/core-registry/*": [
+        "../../platform/kb-labs-core/packages/core-registry/src/*"
       ],
       "@kb-labs/core-runtime": [
         "../../platform/kb-labs-core/packages/core-runtime/src/index.ts"

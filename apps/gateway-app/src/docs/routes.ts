@@ -7,7 +7,7 @@
  */
 
 import type { FastifyInstance } from 'fastify';
-import { mergeOpenAPISpecs } from '@kb-labs/cli-core';
+import { mergeOpenAPISpecs } from '@kb-labs/core-registry';
 import type { ICache } from '@kb-labs/core-platform';
 
 const MERGED_CACHE_KEY = '__gateway_merged_openapi';

@@ -18,7 +18,6 @@ import { registerLLMGatewayRoutes } from './llm/routes.js';
 import { registerTelemetryRoutes } from './telemetry/routes.js';
 import { registerPlatformRoutes } from './platform/routes.js';
 import { registerAggregatedDocsRoutes } from './docs/routes.js';
-import { registerWidgetStaticRoutes } from './widgets/routes.js';
 import { HostRegistry } from './hosts/registry.js';
 import { globalDispatcher } from './hosts/dispatcher.js';
 import { attachGatewayWs } from './ws/gateway-ws.js';
@@ -31,7 +30,6 @@ export async function createServer(
   logger: ILogger,
   jwtConfig: JwtConfig,
   registry?: HostRegistry,
-  repoRoot?: string,
 ) {
   const gatewayLogger = createCorrelatedLogger(logger, {
     serviceId: 'gateway',
@@ -311,10 +309,6 @@ export async function createServer(
     // Aggregated docs — /openapi-merged.json + /docs-all
     registerAggregatedDocsRoutes(scope as unknown as Parameters<typeof registerAggregatedDocsRoutes>[0], cache);
 
-    // Plugin widget bundles — static files from node_modules (auth required)
-    if (repoRoot) {
-      registerWidgetStaticRoutes(scope as unknown as Parameters<typeof registerWidgetStaticRoutes>[0], repoRoot);
-    }
 
     // Internal dispatch endpoint
     const internalSecret = process.env.GATEWAY_INTERNAL_SECRET;

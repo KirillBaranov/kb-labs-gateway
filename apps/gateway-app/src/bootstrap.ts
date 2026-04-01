@@ -59,7 +59,7 @@ export async function bootstrap(repoRoot: string = process.cwd()): Promise<void>
   const jwtConfig = { secret: jwtSecret ?? 'dev-insecure-secret-change-me' };
 
   // 8. Create server with injected registry
-  const server = await createServer(config, platform.cache, platform.logger, jwtConfig, registry, repoRoot);
+  const server = await createServer(config, platform.cache, platform.logger, jwtConfig, registry);
 
   // 9. Listen
   const address = await server.listen({ port: config.port, host: '0.0.0.0' });
