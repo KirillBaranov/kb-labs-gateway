@@ -16,7 +16,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { ExecuteRequestSchema, type ExecutionEventMessage } from '@kb-labs/gateway-contracts';
-import type { ILogger } from '@kb-labs/core-platform';
+import { logDiagnosticEvent, type ILogger } from '@kb-labs/core-platform';
 import type { CancellationReason } from '@kb-labs/core-contracts';
 import { globalDispatcher } from '../hosts/dispatcher.js';
 import { executionRegistry } from './execution-registry.js';
@@ -55,6 +55,20 @@ export function registerExecuteRoutes(app: FastifyInstance, logger: ILogger): vo
     // Resolve host with 'execution' capability
     const hostId = globalDispatcher.firstHostWithCapability(auth.namespaceId, 'execution');
     if (!hostId) {
+      logDiagnosticEvent(logger, {
+        domain: 'service',
+        event: 'gateway.execution.dispatch',
+        level: 'warn',
+        reasonCode: 'execution_host_unavailable',
+        message: 'No execution host connected for namespace',
+        outcome: 'failed',
+        serviceId: 'gateway',
+        evidence: {
+          namespaceId: auth.namespaceId,
+          pluginId,
+          handlerRef,
+        },
+      });
       return reply.code(503).send({
         error: 'No execution host connected',
         hint: 'Ensure a RuntimeServer is running and connected to Gateway',
@@ -141,6 +155,24 @@ export function registerExecuteRoutes(app: FastifyInstance, logger: ILogger): vo
         });
       } else {
         const message = err instanceof Error ? err.message : String(err);
+        logDiagnosticEvent(logger, {
+          domain: 'service',
+          event: 'gateway.execution.dispatch',
+          level: 'error',
+          reasonCode: 'execution_dispatch_failed',
+          message: 'Gateway execution dispatch failed',
+          outcome: 'failed',
+          error: err instanceof Error ? err : new Error(String(err)),
+          serviceId: 'gateway',
+          evidence: {
+            namespaceId: auth.namespaceId,
+            executionId,
+            requestId,
+            pluginId,
+            handlerRef,
+            hostId,
+          },
+        });
 
         writeEvent({
           type: 'execution:error',

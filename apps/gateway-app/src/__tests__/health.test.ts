@@ -182,4 +182,34 @@ describe('Gateway /health endpoint', () => {
     expect(body.upstreams['rest-api'].status).toBe('up');
     expect(typeof body.upstreams['rest-api'].latencyMs).toBe('number');
   });
+
+  it('logs structured diagnostics when upstream health probe fails', async () => {
+    mockAdapters = { llm: { complete: vi.fn() } };
+    mockFetch.mockRejectedValueOnce(new Error('connect ETIMEDOUT'));
+
+    app = await buildHealthApp({
+      upstreams: {
+        workflow: {
+          url: 'http://localhost:7778',
+          prefix: '/api/v1/workflow',
+        },
+      },
+    });
+
+    const res = await app.inject({ method: 'GET', url: '/health' });
+    expect(res.statusCode).toBe(200);
+    expect(noopLogger.warn).toHaveBeenCalledWith(
+      'Gateway upstream health probe failed',
+      expect.objectContaining({
+        diagnosticEvent: 'gateway.upstream.health',
+        reasonCode: 'upstream_unavailable',
+        serviceId: 'gateway',
+        route: '/api/v1/workflow/health',
+        evidence: expect.objectContaining({
+          upstreamId: 'workflow',
+          upstreamUrl: 'http://localhost:7778',
+        }),
+      }),
+    );
+  });
 });

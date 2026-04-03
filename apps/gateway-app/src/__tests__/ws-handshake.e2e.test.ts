@@ -13,6 +13,7 @@ import type { JwtConfig } from '@kb-labs/gateway-auth';
 import { createAuthMiddleware } from '../auth/middleware.js';
 import { HostRegistry } from '../hosts/registry.js';
 import { createWsHandler } from '../hosts/ws-handler.js';
+import type { ILogger } from '@kb-labs/core-platform';
 
 // Minimal jwtConfig for tests — JWT auth is disabled (empty secret forces fallback to cache tokens)
 const testJwtConfig: JwtConfig = { secret: 'test-secret-do-not-use' };
@@ -43,6 +44,13 @@ let app: FastifyInstance;
 let baseUrl: string;
 let wsUrl: string;
 let cache: ICache;
+const noopLogger: ILogger = {
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+  debug: () => {},
+  child: () => noopLogger,
+} as unknown as ILogger;
 
 beforeAll(async () => {
   cache = makeInMemoryCache();
@@ -66,7 +74,7 @@ beforeAll(async () => {
     });
   });
 
-  app.get('/hosts/connect', { websocket: true }, createWsHandler(cache, testJwtConfig));
+  app.get('/hosts/connect', { websocket: true }, createWsHandler(cache, testJwtConfig, noopLogger));
 
   const address = await app.listen({ port: 0, host: '127.0.0.1' }); // port 0 = random
   baseUrl = address;

@@ -64,7 +64,7 @@ async function buildApp(cache: ICache): Promise<FastifyInstance> {
     return { hosts: [] };
   });
 
-  app.get('/hosts/connect', { websocket: true }, createWsHandler(cache, stubJwtConfig));
+  app.get('/hosts/connect', { websocket: true }, createWsHandler(cache, stubJwtConfig, noopLogger));
 
   await app.ready();
   return app;

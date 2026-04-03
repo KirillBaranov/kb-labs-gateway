@@ -5,7 +5,7 @@ interface WsRequest {
   headers: { authorization?: string };
   url?: string;
 }
-import type { ICache } from '@kb-labs/core-platform';
+import { logDiagnosticEvent, type ICache, type ILogger } from '@kb-labs/core-platform';
 import {
   HelloMessageSchema,
   AdapterCallMessageSchema,
@@ -29,7 +29,12 @@ function send(ws: WebSocket, msg: OutboundMessage): void {
   ws.send(JSON.stringify(msg));
 }
 
-export function createWsHandler(cache: ICache, jwtConfig: JwtConfig, hostRegistry?: HostRegistry) {
+export function createWsHandler(
+  cache: ICache,
+  jwtConfig: JwtConfig,
+  logger: ILogger,
+  hostRegistry?: HostRegistry,
+) {
   const registry = hostRegistry ?? new HostRegistry(cache);
   const buffer = new AdaptiveBuffer(cache);
 
@@ -40,12 +45,32 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig, hostRegistr
     // 1. Auth — machine token required
     const token = extractBearerToken(request.headers.authorization);
     if (!token) {
+      logDiagnosticEvent(logger, {
+        domain: 'service',
+        event: 'gateway.hosts.ws.auth',
+        level: 'warn',
+        reasonCode: 'websocket_auth_failed',
+        message: 'Host WebSocket connection missing authorization token',
+        outcome: 'failed',
+        serviceId: 'gateway',
+        route: '/hosts/connect',
+      });
       socket.close(1008, 'Missing Authorization header');
       return;
     }
 
     const tokenEntry = await resolveToken(token, cache, jwtConfig);
     if (!tokenEntry || tokenEntry.type !== 'machine') {
+      logDiagnosticEvent(logger, {
+        domain: 'service',
+        event: 'gateway.hosts.ws.auth',
+        level: 'warn',
+        reasonCode: 'websocket_auth_failed',
+        message: 'Host WebSocket machine token rejected',
+        outcome: 'failed',
+        serviceId: 'gateway',
+        route: '/hosts/connect',
+      });
       socket.close(1008, 'Invalid machine token');
       return;
     }
@@ -65,6 +90,20 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig, hostRegistr
       const helloTimeout = setTimeout(() => {
         if (!helloDone) {
           helloDone = true;
+          logDiagnosticEvent(logger, {
+            domain: 'service',
+            event: 'gateway.hosts.ws.handshake',
+            level: 'warn',
+            reasonCode: 'websocket_hello_timeout',
+            message: 'Host WebSocket hello timed out',
+            outcome: 'failed',
+            serviceId: 'gateway',
+            route: '/hosts/connect',
+            evidence: {
+              hostId,
+              namespaceId,
+            },
+          });
           socket.close(1008, 'Hello timeout');
           reject(new Error('Hello timeout'));
         }
@@ -80,6 +119,22 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig, hostRegistr
 
           // Version negotiation
           if (!protocolVersions.includes(msg.protocolVersion)) {
+            logDiagnosticEvent(logger, {
+              domain: 'service',
+              event: 'gateway.hosts.ws.handshake',
+              level: 'warn',
+              reasonCode: 'websocket_protocol_unsupported',
+              message: 'Host WebSocket protocol version is unsupported',
+              outcome: 'failed',
+              serviceId: 'gateway',
+              route: '/hosts/connect',
+              evidence: {
+                hostId,
+                namespaceId,
+                protocolVersion: msg.protocolVersion,
+                supportedVersions: [...SUPPORTED_PROTOCOL_VERSIONS],
+              },
+            });
             send(socket, {
               type: 'negotiate',
               supportedVersions: [...SUPPORTED_PROTOCOL_VERSIONS],
@@ -92,7 +147,22 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig, hostRegistr
           protocolVersion = msg.protocolVersion;
           helloCaps = msg.capabilities ?? [];
           resolve();
-        } catch {
+        } catch (error) {
+          logDiagnosticEvent(logger, {
+            domain: 'service',
+            event: 'gateway.hosts.ws.handshake',
+            level: 'warn',
+            reasonCode: 'websocket_handshake_invalid',
+            message: 'Host WebSocket hello message is invalid',
+            outcome: 'failed',
+            error: error instanceof Error ? error : new Error(String(error)),
+            serviceId: 'gateway',
+            route: '/hosts/connect',
+            evidence: {
+              hostId,
+              namespaceId,
+            },
+          });
           socket.close(1008, 'Invalid hello message');
           reject(new Error('Invalid hello'));
         }
@@ -183,8 +253,22 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig, hostRegistr
             void handleAdapterCall(msg, socket, hostId, namespaceId);
             break;
         }
-      } catch {
-        // ignore malformed messages
+      } catch (error) {
+        logDiagnosticEvent(logger, {
+          domain: 'service',
+          event: 'gateway.hosts.ws.message',
+          level: 'warn',
+          reasonCode: 'websocket_message_invalid',
+          message: 'Host WebSocket message is malformed',
+          outcome: 'failed',
+          error: error instanceof Error ? error : new Error(String(error)),
+          serviceId: 'gateway',
+          route: '/hosts/connect',
+          evidence: {
+            hostId,
+            namespaceId,
+          },
+        });
       }
     });
 
@@ -196,7 +280,21 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig, hostRegistr
       // Cancel all executions dispatched to this host (CC2)
       const cancelled = executionRegistry.cancelByHost(hostId, 'disconnect');
       if (cancelled.length > 0) {
-        console.warn(`[ws-handler] Host ${hostId} disconnected, cancelled ${cancelled.length} execution(s)`);
+        logDiagnosticEvent(logger, {
+          domain: 'service',
+          event: 'gateway.hosts.ws.disconnect',
+          level: 'warn',
+          reasonCode: 'execution_dispatch_failed',
+          message: 'Host disconnected and active executions were cancelled',
+          outcome: 'failed',
+          serviceId: 'gateway',
+          route: '/hosts/connect',
+          evidence: {
+            hostId,
+            namespaceId,
+            cancelledExecutions: cancelled.length,
+          },
+        });
       }
 
       await registry.setOffline(hostId, namespaceId, connectionId);
@@ -220,6 +318,21 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig, hostRegistr
     // 1. Validate message schema
     const parsed = AdapterCallMessageSchema.safeParse(msg);
     if (!parsed.success) {
+      logDiagnosticEvent(logger, {
+        domain: 'service',
+        event: 'gateway.hosts.adapter-call',
+        level: 'warn',
+        reasonCode: 'websocket_message_invalid',
+        message: 'Host adapter call message is invalid',
+        outcome: 'failed',
+        serviceId: 'gateway',
+        route: '/hosts/connect',
+        evidence: {
+          hostId,
+          namespaceId,
+          requestId,
+        },
+      });
       send(socket, {
         type: 'adapter:error',
         requestId: requestId ?? 'unknown',
@@ -233,6 +346,23 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig, hostRegistr
     // 2. Validate adapter is in allowlist
     const adapterCheck = AdapterNameSchema.safeParse(call.adapter);
     if (!adapterCheck.success) {
+      logDiagnosticEvent(logger, {
+        domain: 'service',
+        event: 'gateway.hosts.adapter-call',
+        level: 'warn',
+        reasonCode: 'adapter_call_rejected',
+        message: 'Host adapter call rejected by gateway allowlist',
+        outcome: 'failed',
+        serviceId: 'gateway',
+        route: '/hosts/connect',
+        evidence: {
+          hostId,
+          namespaceId,
+          requestId: call.requestId,
+          adapter: call.adapter,
+          method: call.method,
+        },
+      });
       send(socket, {
         type: 'adapter:error',
         requestId: call.requestId,
@@ -286,6 +416,25 @@ export function createWsHandler(cache: ICache, jwtConfig: JwtConfig, hostRegistr
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      logDiagnosticEvent(logger, {
+        domain: 'service',
+        event: 'gateway.hosts.adapter-call',
+        level: 'error',
+        reasonCode: 'adapter_bridge_unavailable',
+        message: 'Gateway could not reach REST adapter bridge',
+        outcome: 'failed',
+        error: err instanceof Error ? err : new Error(String(err)),
+        serviceId: 'gateway',
+        route: '/hosts/connect',
+        evidence: {
+          hostId,
+          namespaceId,
+          requestId: call.requestId,
+          adapter: call.adapter,
+          method: call.method,
+          restApiUrl,
+        },
+      });
       send(socket, {
         type: 'adapter:error',
         requestId: call.requestId,

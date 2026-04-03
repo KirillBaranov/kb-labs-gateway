@@ -40,7 +40,7 @@ export function attachGatewayWs(
   hostRegistry?: import('../hosts/registry.js').HostRegistry,
 ): void {
   const wss = new WebSocketServer({ noServer: true });
-  const hostsHandler = createWsHandler(cache, jwtConfig, hostRegistry);
+  const hostsHandler = createWsHandler(cache, jwtConfig, logger, hostRegistry);
   const clientsHandler = createClientWsHandler(cache, jwtConfig, logger);
 
   // Capture @fastify/http-proxy's upgrade listener(s)

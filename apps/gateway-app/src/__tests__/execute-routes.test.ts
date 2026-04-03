@@ -215,6 +215,17 @@ describe('POST /api/v1/execute — error cases', () => {
     const body = res.json() as { error: string; namespaceId: string };
     expect(body.error).toBe('No execution host connected');
     expect(body.namespaceId).toBe('ns-test');
+    expect(noopLogger.warn).toHaveBeenCalledWith(
+      'No execution host connected for namespace',
+      expect.objectContaining({
+        diagnosticEvent: 'gateway.execution.dispatch',
+        reasonCode: 'execution_host_unavailable',
+        serviceId: 'gateway',
+        evidence: expect.objectContaining({
+          namespaceId: 'ns-test',
+        }),
+      }),
+    );
   });
 
   it('on dispatch failure: streams execution:error + execution:done(exitCode=1)', async () => {
@@ -232,6 +243,15 @@ describe('POST /api/v1/execute — error cases', () => {
     const errorEvent = events.find((e) => (e as { type: string }).type === 'execution:error');
     expect(errorEvent).toBeDefined();
     expect((errorEvent as { code: string }).code).toBe('EXECUTION_FAILED');
+    expect(noopLogger.error).toHaveBeenCalledWith(
+      'Gateway execution dispatch failed',
+      expect.any(Error),
+      expect.objectContaining({
+        diagnosticEvent: 'gateway.execution.dispatch',
+        reasonCode: 'execution_dispatch_failed',
+        serviceId: 'gateway',
+      }),
+    );
 
     const doneEvent = events.find((e) => (e as { type: string }).type === 'execution:done');
     expect((doneEvent as { exitCode: number }).exitCode).toBe(1);

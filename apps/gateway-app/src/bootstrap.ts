@@ -1,3 +1,4 @@
+import { logDiagnosticEvent } from '@kb-labs/core-platform';
 import { platform, createServiceBootstrap } from '@kb-labs/core-runtime';
 import { createCorrelatedLogger } from '@kb-labs/shared-http';
 import type { IHostStore } from '@kb-labs/gateway-contracts';
@@ -40,7 +41,25 @@ export async function bootstrap(repoRoot: string = process.cwd()): Promise<void>
   const registry = new HostRegistry(platform.cache, hostStore);
 
   // 5. Restore persisted hosts into cache
-  const restoredCount = await registry.restore();
+  let restoredCount = 0;
+  try {
+    restoredCount = await registry.restore();
+  } catch (error) {
+    logDiagnosticEvent(platform.logger, {
+      domain: 'registry',
+      event: 'gateway.hosts.restore',
+      level: 'error',
+      reasonCode: 'registry_restore_failed',
+      message: 'Failed to restore gateway host registry',
+      outcome: 'failed',
+      error: error instanceof Error ? error : new Error(String(error)),
+      serviceId: 'gateway',
+      evidence: {
+        persistentStore: !!hostStore,
+      },
+    });
+    throw error;
+  }
   if (restoredCount > 0) {
     logger.info('Restored hosts from store', { count: restoredCount });
   }

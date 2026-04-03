@@ -7,7 +7,7 @@ import {
   createServiceReadyResponse,
   registerOpenAPI,
 } from '@kb-labs/shared-http';
-import type { ICache, ILogger } from '@kb-labs/core-platform';
+import { logDiagnosticEvent, type ICache, type ILogger } from '@kb-labs/core-platform';
 import type { GatewayConfig } from '@kb-labs/gateway-contracts';
 import { HostRegistrationSchema } from '@kb-labs/gateway-contracts';
 import { AuthService, type JwtConfig } from '@kb-labs/gateway-auth';
@@ -157,9 +157,45 @@ export async function createServer(
             const res = await fetch(`${upstream.url}/health`, {
               signal: AbortSignal.timeout(2000),
             });
-            upstreams[name] = { status: res.ok ? 'up' : 'down', latencyMs: Date.now() - probeStart };
-          } catch {
-            upstreams[name] = { status: 'down', latencyMs: Date.now() - probeStart };
+            const latencyMs = Date.now() - probeStart;
+            upstreams[name] = { status: res.ok ? 'up' : 'down', latencyMs };
+            if (!res.ok) {
+              logDiagnosticEvent(logger, {
+                domain: 'service',
+                event: 'gateway.upstream.health',
+                level: 'warn',
+                reasonCode: 'upstream_unavailable',
+                message: 'Gateway upstream health probe failed',
+                outcome: 'failed',
+                serviceId: 'gateway',
+                route: `${upstream.prefix}/health`,
+                evidence: {
+                  upstreamId: name,
+                  upstreamUrl: upstream.url,
+                  statusCode: res.status,
+                  latencyMs,
+                },
+              });
+            }
+          } catch (error) {
+            const latencyMs = Date.now() - probeStart;
+            upstreams[name] = { status: 'down', latencyMs };
+            logDiagnosticEvent(logger, {
+              domain: 'service',
+              event: 'gateway.upstream.health',
+              level: 'warn',
+              reasonCode: 'upstream_unavailable',
+              message: 'Gateway upstream health probe failed',
+              outcome: 'failed',
+              error: error instanceof Error ? error : new Error(String(error)),
+              serviceId: 'gateway',
+              route: `${upstream.prefix}/health`,
+              evidence: {
+                upstreamId: name,
+                upstreamUrl: upstream.url,
+                latencyMs,
+              },
+            });
           }
         });
       }
