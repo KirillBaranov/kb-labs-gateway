@@ -1,9 +1,6 @@
 .git
-.gitignore
-**/src
 **/*.ts
 !**/*.d.ts
-**/*.map
 **/tsconfig*.json
 **/tsup.config.*
 **/vitest.config.*
@@ -16,3 +13,7 @@ README.md
 CONTRIBUTING.md
 docs/
 scripts/
+.github/
+.npmrc
+pnpm-lock.yaml
+pnpm-workspace.yaml
