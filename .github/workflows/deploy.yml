@@ -27,8 +27,17 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - name: Replace link deps with npm versions
+        run: |
+          find . -name "package.json" \
+            ! -path "*/node_modules/*" \
+            ! -path "./.github/*" \
+            | xargs sed -i \
+              -e 's|"link:[^"]*"|"*"|g' \
+              -e 's|"workspace:\*"|"*"|g'
+
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build
         run: pnpm --filter @kb-labs/gateway-app... run build
