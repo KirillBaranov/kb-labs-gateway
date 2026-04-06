@@ -3,6 +3,11 @@
     "adapters": {
       "logger": "@kb-labs/adapters-pino",
       "llm": "@kb-labs/adapters-openai"
+    },
+    "adapterOptions": {
+      "llm": {
+        "baseURL": "https://kb-labs-openai-proxy.kblabs-proxy.workers.dev"
+      }
     }
   },
   "gateway": {
