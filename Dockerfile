@@ -14,7 +14,8 @@ RUN sed -i \
   packages/gateway-contracts/package.json \
   packages/gateway-core/package.json
 
-RUN corepack enable pnpm && pnpm install --frozen-lockfile=false && \
+RUN echo "shamefully-hoist=true" >> .npmrc && \
+    corepack enable pnpm && pnpm install --frozen-lockfile=false && \
     pnpm --filter @kb-labs/gateway-app... run build
 
 # ── runner ────────────────────────────────────────────────────────────────────
