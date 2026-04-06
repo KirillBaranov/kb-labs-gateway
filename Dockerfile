@@ -5,7 +5,7 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package.json pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml .npmrc ./
 COPY apps/gateway-app/package.json       ./apps/gateway-app/
 COPY packages/gateway-auth/package.json  ./packages/gateway-auth/
 COPY packages/gateway-contracts/package.json ./packages/gateway-contracts/
