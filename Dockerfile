@@ -14,4 +14,4 @@ USER gateway
 
 EXPOSE 4000
 
-CMD ["node", "apps/gateway-app/dist/index.js"]
+CMD ["node", "dist/index.js"]
