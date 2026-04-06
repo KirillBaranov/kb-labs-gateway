@@ -1,0 +1,12 @@
+.git
+.gitignore
+**/node_modules
+**/dist
+**/.turbo
+**/*.log
+**/.env*
+**/coverage
+**/.next
+**/build
+README.md
+CONTRIBUTING.md

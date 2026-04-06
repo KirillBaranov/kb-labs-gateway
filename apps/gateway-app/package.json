@@ -33,6 +33,7 @@
     "@kb-labs/core-registry": "link:../../../../platform/kb-labs-core/packages/core-registry",
     "@kb-labs/core-runtime": "link:../../../../platform/kb-labs-core/packages/core-runtime",
     "@kb-labs/core-sys": "link:../../../../platform/kb-labs-core/packages/core-sys",
+    "@kb-labs/plugin-contracts": "link:../../../../infra/kb-labs-plugin/packages/plugin-contracts",
     "@kb-labs/gateway-auth": "workspace:*",
     "@kb-labs/gateway-contracts": "workspace:*",
     "@kb-labs/gateway-core": "workspace:*",

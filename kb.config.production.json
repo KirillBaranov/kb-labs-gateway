@@ -1,0 +1,29 @@
+{
+  "platform": {
+    "adapters": {
+      "logger": "@kb-labs/adapters-pino"
+    }
+  },
+  "gateway": {
+    "port": 4000,
+    "upstreams": {
+      "rest": {
+        "url": "http://rest:5050",
+        "prefix": "/api/v1",
+        "websocket": true,
+        "description": "REST API"
+      },
+      "workflow": {
+        "url": "http://workflow:7778",
+        "prefix": "/api/exec",
+        "rewritePrefix": "",
+        "description": "Workflow Daemon"
+      },
+      "marketplace": {
+        "url": "http://marketplace:5070",
+        "prefix": "/api/v1/marketplace",
+        "description": "Marketplace Service"
+      }
+    }
+  }
+}
