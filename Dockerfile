@@ -1,15 +1,9 @@
-FROM node:20-alpine AS base
-
-# ── deps ─────────────────────────────────────────────────────────────────────
-FROM base AS deps
+FROM node:20-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package.json pnpm-workspace.yaml .npmrc ./
-COPY apps/gateway-app/package.json       ./apps/gateway-app/
-COPY packages/gateway-auth/package.json  ./packages/gateway-auth/
-COPY packages/gateway-contracts/package.json ./packages/gateway-contracts/
-COPY packages/gateway-core/package.json  ./packages/gateway-core/
+# Copy everything
+COPY . .
 
 # Replace link: and workspace:* with published npm versions
 RUN sed -i \
@@ -20,20 +14,11 @@ RUN sed -i \
   packages/gateway-contracts/package.json \
   packages/gateway-core/package.json
 
-RUN corepack enable pnpm && pnpm install --frozen-lockfile=false
-
-# ── builder ───────────────────────────────────────────────────────────────────
-FROM base AS builder
-WORKDIR /app
-
-COPY --from=deps /app/node_modules ./node_modules
-
-COPY . .
-
-RUN corepack enable pnpm && pnpm --filter @kb-labs/gateway-app... run build
+RUN corepack enable pnpm && pnpm install --frozen-lockfile=false && \
+    pnpm --filter @kb-labs/gateway-app... run build
 
 # ── runner ────────────────────────────────────────────────────────────────────
-FROM base AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -47,7 +32,6 @@ COPY --from=builder /app/packages/gateway-auth/dist         ./packages/gateway-a
 COPY --from=builder /app/packages/gateway-contracts/dist    ./packages/gateway-contracts/dist
 COPY --from=builder /app/packages/gateway-core/dist         ./packages/gateway-core/dist
 
-# Minimal production config — gateway section only, no products/plugins
 COPY kb.config.production.json ./kb.config.json
 
 USER gateway
