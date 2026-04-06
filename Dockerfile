@@ -12,9 +12,13 @@ COPY packages/gateway-contracts/package.json ./packages/gateway-contracts/
 COPY packages/gateway-core/package.json  ./packages/gateway-core/
 
 # Replace link: and workspace:* with published npm versions
-RUN find . -name "package.json" | xargs sed -i \
+RUN sed -i \
   -e 's|"link:[^"]*"|"*"|g' \
-  -e 's|"workspace:\*"|"*"|g'
+  -e 's|"workspace:\*"|"*"|g' \
+  apps/gateway-app/package.json \
+  packages/gateway-auth/package.json \
+  packages/gateway-contracts/package.json \
+  packages/gateway-core/package.json
 
 RUN corepack enable pnpm && pnpm install --frozen-lockfile=false
 
@@ -22,8 +26,7 @@ RUN corepack enable pnpm && pnpm install --frozen-lockfile=false
 FROM base AS builder
 WORKDIR /app
 
-COPY --from=deps /app/node_modules           ./node_modules
-COPY --from=deps /app/apps/gateway-app/node_modules ./apps/gateway-app/node_modules
+COPY --from=deps /app/node_modules ./node_modules
 
 COPY . .
 
