@@ -5,7 +5,7 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs && \
     adduser  --system --uid 1001 gateway
 
-RUN npm install @kb-labs/gateway-app
+RUN npm init -y && npm install @kb-labs/gateway-app
 
 COPY kb.config.production.json ./kb.config.json
 
