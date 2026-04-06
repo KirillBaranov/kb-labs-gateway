@@ -1,7 +1,8 @@
 {
   "platform": {
     "adapters": {
-      "logger": "@kb-labs/adapters-pino"
+      "logger": "@kb-labs/adapters-pino",
+      "llm": "@kb-labs/adapters-openai"
     }
   },
   "gateway": {

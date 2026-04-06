@@ -54,5 +54,6 @@ jobs:
               -e NODE_ENV=production \
               -e GATEWAY_JWT_SECRET=${{ secrets.GATEWAY_JWT_SECRET }} \
               -e GATEWAY_INTERNAL_SECRET=${{ secrets.GATEWAY_INTERNAL_SECRET }} \
+              -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
               ghcr.io/kirillbaranov/kb-labs-gateway:latest
             docker image prune -f
