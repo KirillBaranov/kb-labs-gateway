@@ -1,6 +1,6 @@
 {
   "name": "@kb-labs/gateway",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "KB Labs Gateway — central router for all platform clients and services.",
   "type": "module",
   "author": {
