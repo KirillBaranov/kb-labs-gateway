@@ -47,6 +47,36 @@ jobs:
           pnpm --filter @kb-labs/gateway-app deploy --prod deploy-bundle
           cp kb.config.production.json deploy-bundle/kb.config.json
 
+      - name: Generate marketplace.lock for adapters
+        run: |
+          mkdir -p deploy-bundle/.kb
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const bundleDir = 'deploy-bundle';
+          const nmDir = path.join(bundleDir, 'node_modules');
+          const adapters = ['@kb-labs/adapters-openai'];
+          const installed = {};
+          for (const pkg of adapters) {
+            const pkgDir = path.join(nmDir, ...pkg.split('/'));
+            const pkgJson = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8'));
+            const relPath = path.relative(bundleDir, pkgDir);
+            installed[pkg] = {
+              version: pkgJson.version,
+              integrity: '',
+              resolvedPath: relPath,
+              installedAt: new Date().toISOString(),
+              source: 'marketplace',
+              primaryKind: 'adapter',
+              provides: ['adapter'],
+              enabled: true,
+            };
+          }
+          const lock = { schema: 'kb.marketplace/2', installed };
+          fs.writeFileSync('deploy-bundle/.kb/marketplace.lock', JSON.stringify(lock, null, 2));
+          console.log('marketplace.lock written:', Object.keys(installed));
+          "
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
