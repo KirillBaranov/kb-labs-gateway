@@ -34,8 +34,6 @@
     "@kb-labs/core-registry": "^1.9.0",
     "@kb-labs/core-runtime": "^1.9.0",
     "@kb-labs/core-sys": "^1.9.0",
-    "@kb-labs/adapters-openai": "*",
-    "@kb-labs/adapters-pino": "*",
     "@kb-labs/plugin-contracts": "^1.4.0",
     "@kb-labs/gateway-auth": "workspace:*",
     "@kb-labs/gateway-contracts": "workspace:*",

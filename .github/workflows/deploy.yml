@@ -55,24 +55,29 @@ jobs:
           const path = require('path');
           const bundleDir = 'deploy-bundle';
           const nmDir = path.join(bundleDir, 'node_modules');
-          const adapters = ['@kb-labs/adapters-openai', '@kb-labs/adapters-pino'];
+          // Scan all @kb-labs/* packages in node_modules for adapter manifests
           const installed = {};
-          for (const pkg of adapters) {
-            const pkgDir = path.join(nmDir, ...pkg.split('/'));
-            if (!fs.existsSync(pkgDir)) { console.warn('skip (not found):', pkg); continue; }
-            let version = '0.0.0';
-            try { version = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8')).version || version; } catch {}
-            const relPath = path.relative(bundleDir, pkgDir);
-            installed[pkg] = {
-              version,
-              integrity: '',
-              resolvedPath: relPath,
-              installedAt: new Date().toISOString(),
-              source: 'marketplace',
-              primaryKind: 'adapter',
-              provides: ['adapter'],
-              enabled: true,
-            };
+          const kbDir = path.join(nmDir, '@kb-labs');
+          if (fs.existsSync(kbDir)) {
+            for (const name of fs.readdirSync(kbDir)) {
+              const pkgDir = path.join(kbDir, name);
+              const pkgJsonPath = path.join(pkgDir, 'package.json');
+              if (!fs.existsSync(pkgJsonPath)) continue;
+              const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
+              // Include packages with 'adapter' in their kb.manifest field or name contains 'adapters-'
+              if (!name.startsWith('adapters-')) continue;
+              const relPath = path.relative(bundleDir, pkgDir);
+              installed[pkgJson.name] = {
+                version: pkgJson.version || '0.0.0',
+                integrity: '',
+                resolvedPath: relPath,
+                installedAt: new Date().toISOString(),
+                source: 'marketplace',
+                primaryKind: 'adapter',
+                provides: ['adapter'],
+                enabled: true,
+              };
+            }
           }
           const lock = { schema: 'kb.marketplace/2', installed };
           fs.writeFileSync('deploy-bundle/.kb/marketplace.lock', JSON.stringify(lock, null, 2));
