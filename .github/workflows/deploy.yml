@@ -55,14 +55,16 @@ jobs:
           const path = require('path');
           const bundleDir = 'deploy-bundle';
           const nmDir = path.join(bundleDir, 'node_modules');
-          const adapters = ['@kb-labs/adapters-openai'];
+          const adapters = ['@kb-labs/adapters-openai', '@kb-labs/adapters-pino'];
           const installed = {};
           for (const pkg of adapters) {
             const pkgDir = path.join(nmDir, ...pkg.split('/'));
-            const pkgJson = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8'));
+            if (!fs.existsSync(pkgDir)) { console.warn('skip (not found):', pkg); continue; }
+            let version = '0.0.0';
+            try { version = JSON.parse(fs.readFileSync(path.join(pkgDir, 'package.json'), 'utf8')).version || version; } catch {}
             const relPath = path.relative(bundleDir, pkgDir);
             installed[pkg] = {
-              version: pkgJson.version,
+              version,
               integrity: '',
               resolvedPath: relPath,
               installedAt: new Date().toISOString(),
