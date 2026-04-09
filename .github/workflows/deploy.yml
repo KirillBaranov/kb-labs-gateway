@@ -47,30 +47,38 @@ jobs:
           pnpm --filter @kb-labs/gateway-app deploy --prod deploy-bundle
           cp kb.config.production.json deploy-bundle/kb.config.json
 
-      - name: Generate marketplace.lock for adapters
+      - name: Generate marketplace.lock for deploy bundle
         run: |
           mkdir -p deploy-bundle/.kb
           node -e "
           const fs = require('fs');
           const path = require('path');
+          const crypto = require('crypto');
           const bundleDir = 'deploy-bundle';
           const nmDir = path.join(bundleDir, 'node_modules');
-          // Scan all @kb-labs/* packages in node_modules for adapter manifests
+          // Scan all @kb-labs/adapters-* packages in node_modules and emit
+          // a marketplace.lock pointing at their real on-disk location.
+          //
+          // NOTE: this is a temporary derivation step that will be replaced
+          // by \`kb platform lock --for-prod\` (Phase 6 of the platform-sync
+          // plan). Until then, integrity is computed from package.json so
+          // the validate step below can verify the bundle wasn't tampered
+          // with after lock generation.
           const installed = {};
           const kbDir = path.join(nmDir, '@kb-labs');
           if (fs.existsSync(kbDir)) {
             for (const name of fs.readdirSync(kbDir)) {
+              if (!name.startsWith('adapters-')) continue;
               const pkgDir = path.join(kbDir, name);
               const pkgJsonPath = path.join(pkgDir, 'package.json');
               if (!fs.existsSync(pkgJsonPath)) continue;
-              const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
-              // Include packages with 'adapter' in their kb.manifest field or name contains 'adapters-'
-              if (!name.startsWith('adapters-')) continue;
-              const relPath = path.relative(bundleDir, pkgDir);
+              const pkgJsonBuf = fs.readFileSync(pkgJsonPath);
+              const pkgJson = JSON.parse(pkgJsonBuf.toString('utf8'));
+              const integrity = 'sha256-' + crypto.createHash('sha256').update(pkgJsonBuf).digest('base64');
               installed[pkgJson.name] = {
                 version: pkgJson.version || '0.0.0',
-                integrity: '',
-                resolvedPath: relPath,
+                integrity,
+                resolvedPath: './' + path.relative(bundleDir, pkgDir),
                 installedAt: new Date().toISOString(),
                 source: 'marketplace',
                 primaryKind: 'adapter',
@@ -82,6 +90,42 @@ jobs:
           const lock = { schema: 'kb.marketplace/2', installed };
           fs.writeFileSync('deploy-bundle/.kb/marketplace.lock', JSON.stringify(lock, null, 2));
           console.log('marketplace.lock written:', Object.keys(installed));
+          "
+
+      - name: Validate deploy bundle against marketplace.lock
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const crypto = require('crypto');
+          const bundleDir = 'deploy-bundle';
+          const lockPath = path.join(bundleDir, '.kb', 'marketplace.lock');
+          const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+          const missing = [];
+          const mismatched = [];
+          for (const [id, entry] of Object.entries(lock.installed)) {
+            const abs = path.resolve(bundleDir, entry.resolvedPath);
+            const pkgJsonPath = path.join(abs, 'package.json');
+            if (!fs.existsSync(pkgJsonPath)) {
+              missing.push(id);
+              continue;
+            }
+            if (entry.integrity) {
+              const computed = 'sha256-' + crypto.createHash('sha256').update(fs.readFileSync(pkgJsonPath)).digest('base64');
+              if (computed !== entry.integrity) {
+                mismatched.push({ id, expected: entry.integrity, computed });
+              }
+            }
+          }
+          const total = Object.keys(lock.installed).length;
+          console.log('validated ' + total + ' entries');
+          if (missing.length || mismatched.length) {
+            console.error('DEPLOY BUNDLE IS INCONSISTENT WITH LOCK');
+            if (missing.length) console.error('  missing:', missing);
+            if (mismatched.length) console.error('  integrity mismatch:', mismatched);
+            process.exit(1);
+          }
+          console.log('deploy-bundle OK');
           "
 
       - name: Log in to GitHub Container Registry
