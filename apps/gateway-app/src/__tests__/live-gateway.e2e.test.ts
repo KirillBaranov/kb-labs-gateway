@@ -1,10 +1,12 @@
 /**
- * Live E2E tests against the running Gateway on localhost:4000.
+ * Live E2E tests against a self-bootstrapped Gateway.
  *
- * ⚠️  Requires Gateway to be running: `pnpm dev:start gateway`
+ * The harness calls `kb-dev ensure gateway` in beforeAll, so no manual setup is
+ * needed — `pnpm test:e2e` brings the gateway up, runs the tests, and stops it.
  *
  * These tests do NOT mock anything — they use real HTTP and WebSocket connections
- * to the live Gateway process. The JWT secret must match the running instance.
+ * to the live Gateway process. The JWT secret must match the running instance
+ * (seeded from `.kb/kb.config.json`).
  *
  * Covers end-to-end flows:
  *   1. Auth: /auth/register → /auth/token → JWT access token
@@ -15,14 +17,16 @@
  *   6. Cancel: client cancels an in-flight execution via WS
  */
 
-import { describe, it, expect, beforeAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { WebSocket, type RawData } from 'ws';
+import { KbDevController } from '@kb-labs/shared-testing-e2e';
 
-// ── Config ────────────────────────────────────────────────────────────────────
+// ── Config (populated in beforeAll via kb-dev) ────────────────────────────────
 
-const GATEWAY = 'http://localhost:4000';
-const GATEWAY_WS = 'ws://localhost:4000';
+let GATEWAY = '';
+let GATEWAY_WS = '';
 const NAMESPACE = 'ns-live-e2e';
+const controller = new KbDevController();
 
 // ── Socket tracking + cleanup ─────────────────────────────────────────────────
 
@@ -51,16 +55,17 @@ afterEach(async () => {
   }
 });
 
-// ── Health check guard ────────────────────────────────────────────────────────
+// ── Self-bootstrap via kb-dev ─────────────────────────────────────────────────
 
 beforeAll(async () => {
-  const res = await fetch(`${GATEWAY}/health`).catch(() => null);
-  if (!res?.ok) {
-    throw new Error(
-      `Gateway is not reachable at ${GATEWAY}. Start it with: pnpm dev:start gateway`,
-    );
-  }
-}, 5000);
+  await controller.ensureServices(['gateway']);
+  GATEWAY = controller.getServiceUrl('gateway');
+  GATEWAY_WS = GATEWAY.replace(/^http/, 'ws');
+}, 120_000);
+
+afterAll(async () => {
+  await controller.dispose();
+}, 60_000);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
